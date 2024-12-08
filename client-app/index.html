@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PWA de Localização</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <title>PWA with Background Sync</title>
+  <link rel="image" sizes="192x192" href="/imagems/icon-192.png">
+  <link rel="image" sizes="512x512" href="/imagems/icon-512.png">
+  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
 </head>
 <body>
-  <h1>PWA de Localização</h1>
-  <button id="start">Iniciar Envio de Localização</button>
-  <button id="stop">Parar Envio de Localização</button>
-
+  <h1>PWA with Background Sync</h1>
+  <p id="consent-message">This app collects your approximate location every 5 minutes. Do you agree?</p>
+  <button id="install-button">Install App</button>
+  <button id="consent-button">I Agree</button>
   <script src="app.js"></script>
 </body>
 </html>

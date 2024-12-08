@@ -3,9 +3,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
+// var path = require('path');
 
 const app = express();
 const port = 3000;
+
+// var htmlPath = path.join(__dirname, "../client-app");
+
+// app.use('/', express.static(htmlPath));
 
 // Use middleware
 app.use(bodyParser.json());
