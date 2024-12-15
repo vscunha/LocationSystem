@@ -39,6 +39,23 @@ db.run(
     }
   }
 );
+// Create table if it doesn't exist
+db.run(
+  `CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE,
+  password TEXT,
+  confirmed INTEGER DEFAULT 0, 
+  enabled INTEGER DEFAULT 0,
+  role TEXT,
+  confirmToken TEXT
+  )`,
+  (err) => {
+    if (err) {
+      console.error('Error creating table:', err.message);
+    }
+  }
+);
 
 // POST endpoint to receive location data
 app.post('/api/locacao', (req, res) => {
@@ -136,3 +153,205 @@ sendRandomNotification();
 
 console.log('Push notification scheduler running...');
 
+const nodemailer = require("nodemailer");
+const jwt = require("jsonwebtoken");
+const path = require("path");
+
+const JWT_SECRET = "MY_SUPER_SECRET"; // In production, use environment variables
+const EMAIL_USER = "YOUR_EMAIL@gmail.com";
+const EMAIL_PASS = "YOUR_EMAIL_PASSWORD";  // Possibly an app password
+
+// Setup nodemailer (Gmail example)
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS,
+  },
+});
+
+/**
+ *  POST /auth/register
+ *    1. Insert user into SQLite with confirmed=0, enabled=0
+ *    2. Generate confirmToken
+ *    3. Send confirmation email
+ */
+app.post("/auth/register", (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password required." });
+  }
+
+  // Check if user already exists
+  db.get("SELECT email FROM users WHERE email = ?", [email], (err, row) => {
+    if (err) return res.status(500).json({ error: "Database error." });
+    if (row) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+
+    // If user doesn't exist, create confirmToken and insert user
+    const confirmToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: "1d" });
+    db.run(
+      `INSERT INTO users (email, password, confirmed, enabled, role, confirmToken)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [email, password, 0, 0, null, confirmToken],
+      function (err2) {
+        if (err2) {
+          console.error("Error inserting user:", err2.message);
+          return res.status(500).json({ error: "Error inserting user." });
+        }
+
+        // Send confirmation email
+        const confirmLink = `http://localhost:3000/auth/confirm/${confirmToken}`;
+        const mailOptions = {
+          from: EMAIL_USER,
+          to: email,
+          subject: "Confirm your account",
+          html: `
+            <h4>Thanks for registering!</h4>
+            <p>Please confirm your account by clicking the link below:</p>
+            <a href="${confirmLink}">${confirmLink}</a>
+          `,
+        };
+
+        transporter.sendMail(mailOptions, (err3) => {
+          if (err3) {
+            console.error("Error sending email:", err3);
+            return res.status(500).json({ error: "Error sending email." });
+          }
+          return res.json({ message: "User registered. Confirmation email sent." });
+        });
+      }
+    );
+  });
+});
+
+/**
+ * GET /auth/confirm/:token
+ *   Confirms a user's email (sets confirmed=1).
+ *   Then redirects to /confirm.html
+ */
+app.get("/auth/confirm/:token", (req, res) => {
+  const { token } = req.params;
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    // Find the user matching email and confirmToken
+    db.get(
+      "SELECT id, email, confirmToken FROM users WHERE email = ? AND confirmToken = ?",
+      [payload.email, token],
+      (err, user) => {
+        if (err || !user) {
+          return res.status(400).send("Invalid confirmation link.");
+        }
+        // Update confirmed=1
+        db.run("UPDATE users SET confirmed = 1 WHERE id = ?", [user.id], function (err2) {
+          if (err2) {
+            return res.status(500).send("Database update error.");
+          }
+          // Redirect to confirm.html after successful confirmation
+          res.redirect("/confirm.html");
+        });
+      }
+    );
+  } catch (err) {
+    res.status(400).send("Invalid or expired token.");
+  }
+});
+
+/**
+ * POST /auth/login
+ *   1. Check email/password
+ *   2. If user not confirmed => error
+ *   3. If user confirmed but not enabled => role=null
+ *   4. If confirmed & enabled => role=admin or standard
+ */
+app.post("/auth/login", (req, res) => {
+  const { email, password } = req.body;
+  db.get(
+    "SELECT * FROM users WHERE email = ? AND password = ?",
+    [email, password],
+    (err, user) => {
+      if (err) {
+        console.error("Login DB error:", err);
+        return res.status(500).json({ error: "Database error." });
+      }
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials." });
+      }
+      if (user.confirmed === 0) {
+        return res.status(403).json({ error: "Please confirm your email first." });
+      }
+      // If not enabled => role = null (they see pending)
+      let role = user.role; // might be "admin" or "standard" or null
+      if (user.enabled === 0) {
+        role = null;
+      }
+      // Generate JWT
+      const token = jwt.sign({ email: user.email, role }, JWT_SECRET, { expiresIn: "1h" });
+      res.json({ token, role });
+    }
+  );
+});
+
+/** Middleware to verify JWT for admin routes **/
+function adminAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header) return res.status(401).json({ error: "No token provided." });
+
+  const token = header.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ error: "Admin access only." });
+    }
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid token." });
+  }
+}
+
+/**
+ * GET /admin/users
+ *  Admin-only route to list all users
+ */
+app.get("/admin/users", adminAuth, (req, res) => {
+  db.all("SELECT id, email, confirmed, enabled, role FROM users", [], (err, rows) => {
+    if (err) {
+      console.error("Error fetching users:", err);
+      return res.status(500).json({ error: "Database error." });
+    }
+    // Return list of users
+    res.json(rows.map(u => ({
+      email: u.email,
+      confirmed: !!u.confirmed,
+      enabled: !!u.enabled,
+      role: u.role,
+    })));
+  });
+});
+
+/**
+ * POST /admin/updateUser
+ *  Admin-only route to update a user's 'enabled' and 'role'
+ */
+app.post("/admin/updateUser", adminAuth, (req, res) => {
+  const { email, enabled, role } = req.body;
+  // Convert enabled boolean to integer 0 or 1
+  const enabledVal = enabled ? 1 : 0;
+
+  db.run(
+    "UPDATE users SET enabled = ?, role = ? WHERE email = ?",
+    [enabledVal, role, email],
+    function (err) {
+      if (err) {
+        console.error("Error updating user:", err);
+        return res.status(500).json({ error: "Database error." });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "User not found." });
+      }
+      res.json({ success: true });
+    }
+  );
+});
