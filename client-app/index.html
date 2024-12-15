@@ -13,5 +13,12 @@
   <button id="install-button">Install App</button>
   <button id="consent-button">I Agree</button>
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').then(() => {
+            console.log('Service Worker registered!');
+        }).catch(err => console.error('SW registration failed:', err));
+    }
+  </script>
 </body>
 </html>
