@@ -35,44 +35,47 @@
 <!-- Bootstrap JS (Bundle w/ Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
-
-  try {
-    const res = await fetch("/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      document.getElementById("loginMessage").textContent = data.error || "Login failed.";
-      document.getElementById("loginMessage").className = "text-danger";
-    } else {
-      // Save token/role in localStorage (or cookie) for demonstration
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-
-      if (data.role === "admin") {
-        window.location.href = "/admin.html";
-      } else if (data.role === "standard") {
-        // Standard user can go to the map page
-        window.location.href = "/map.html";
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+  
+    try {
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+  
+      if (!res.ok) {
+        // show error
+        document.getElementById("loginMessage").textContent = data.error || "Login failed.";
+        document.getElementById("loginMessage").className = "text-danger";
       } else {
-        // If the user is not enabled or not assigned a role yet
-        // maybe they see access pending page
-        window.location.href = "/access-pending.html";
+        // If user is confirmed + enabled => data.role = 'standard' or 'admin'
+        // If user is confirmed but not enabled => role = null => pending page
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role);
+  
+        if (data.role === "admin") {
+          // admin user => go to index or directly to admin page
+          window.location.href = "/index.html"; 
+        } else if (data.role === "standard") {
+          // standard user => go to main screen with Map tab
+          window.location.href = "/index.html";
+        } else {
+          // role is null => user not enabled yet
+          window.location.href = "/access-pending.html";
+        }
       }
+    } catch (err) {
+      console.error(err);
+      document.getElementById("loginMessage").textContent = "Error logging in.";
+      document.getElementById("loginMessage").className = "text-danger";
     }
-  } catch (err) {
-    console.error(err);
-    document.getElementById("loginMessage").textContent = "Error logging in.";
-    document.getElementById("loginMessage").className = "text-danger";
-  }
-});
-</script>
+  });
+  </script>
 </body>
 </html>
+  

@@ -1,18 +1,13 @@
-// server.js
+const fs = require('fs');
+const webPush = require('web-push');
+const sqlite3 = require('sqlite3').verbose();
 const express = require('express');
 const bodyParser = require('body-parser');
-const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
-// var path = require('path');
 
+// Express setup
 const app = express();
 const port = 3000;
-
-// var htmlPath = path.join(__dirname, "../client-app");
-
-// app.use('/', express.static(htmlPath));
-
-// Use middleware
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -26,11 +21,14 @@ const db = new sqlite3.Database('./locations.db', (err) => {
 });
 
 // Create table if it doesn't exist
+// Update the table creation logic
 db.run(
   `CREATE TABLE IF NOT EXISTS locations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
+    driverName TEXT,
+    corridaNumber TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
   (err) => {
@@ -39,6 +37,7 @@ db.run(
     }
   }
 );
+
 // Create table if it doesn't exist
 db.run(
   `CREATE TABLE IF NOT EXISTS users (
@@ -58,42 +57,78 @@ db.run(
 );
 
 // POST endpoint to receive location data
-app.post('/api/locacao', (req, res) => {
-  const { latitude, longitude } = req.body;
+app.post('/api/location', (req, res) => {
+  const { latitude, longitude, driverName, corridaNumber } = req.body;
 
+  // Validate latitude/longitude
   if (typeof latitude !== 'number' || typeof longitude !== 'number') {
     return res.status(400).json({ error: 'Invalid latitude or longitude.' });
   }
 
-  const stmt = db.prepare('INSERT INTO locations (latitude, longitude) VALUES (?, ?)');
-  stmt.run(latitude, longitude, function (err) {
+  // Optional: Validate driverName, corrida if needed (e.g. typeof string, not empty)
+  // e.g., if (!driverName) { return res.status(400).json({ error: 'Driver name is required.' }) }
+
+  // Prepare SQL statement with extra columns for driverName and corrida
+  const stmt = db.prepare(`
+    INSERT INTO locations (latitude, longitude, driverName, corridaNumber)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  stmt.run(latitude, longitude, driverName || null, corridaNumber || null, function (err) {
     if (err) {
       console.error('Error inserting data:', err.message);
       return res.status(500).json({ error: 'Failed to save location data.' });
     } else {
-      console.log(`Location data saved with ID: ${this.lastID} timestamp: ${Date.now().toLocaleString()}`);
+      console.log(
+        `Location data saved with ID: ${this.lastID}, 
+         driverName: ${driverName}, 
+         corridaNumber: ${corridaNumber}, 
+         timestamp: ${new Date().toLocaleString()}`
+      );
       return res.status(200).json({ message: 'Location data saved.', id: this.lastID });
     }
   });
+
   stmt.finalize();
 });
 
-const fs = require('fs');
 if (!fs.existsSync('subscriptions.json')) {
   fs.writeFileSync('subscriptions.json', JSON.stringify([]));
 }
-const subscriptions = require('./subscriptions.json');
+// Load subscriptions from file
+let subscriptions = require('./subscriptions.json');
 
+// POST endpoint to store or update subscription by driverName + corridaNumber
 app.post('/api/subscribe', (req, res) => {
-    console.log('Received subscription:', req.body);
-    const subscription = req.body;
-    subscriptions.push(subscription); // Save subscription
-    fs.writeFileSync('subscriptions.json', JSON.stringify(subscriptions));
-    res.sendStatus(201);
+  // Expect body like: { driverName, corridaNumber, subscription: {...} }
+  const { driverName, corridaNumber, subscription } = req.body;
+
+  if (!driverName || !corridaNumber || !subscription) {
+    return res.status(400).json({ error: 'Missing driverName, corridaNumber, or subscription.' });
+  }
+
+  // Find existing subscription with matching driverName + corridaNumber
+  const existingIndex = subscriptions.findIndex(
+    sub => sub.driverName === driverName && sub.corridaNumber === corridaNumber
+  );
+
+  if (existingIndex >= 0) {
+    // REPLACE the old subscription with the new one
+    subscriptions[existingIndex].subscription = subscription;
+    console.log(`Updated subscription for driverName=${driverName}, corridaNumber=${corridaNumber}`);
+  } else {
+    // Add a new subscription object
+    subscriptions.push({ driverName, corridaNumber, subscription });
+    console.log(`New subscription added: driverName=${driverName}, corridaNumber=${corridaNumber}`);
+  }
+
+  // Save updated subscriptions to file
+  fs.writeFileSync('subscriptions.json', JSON.stringify(subscriptions, null, 2));
+  return res.status(201).json({ message: 'Subscription stored/updated successfully.' });
 });
 
 // GET endpoint to retrieve all location data
-app.get('/api/locacao', (req, res) => {
+app.get('/api/location', (req, res) => {
   db.all('SELECT * FROM locations', [], (err, rows) => {
     if (err) {
       console.error('Error retrieving data:', err.message);
@@ -109,57 +144,61 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-const webPush = require('web-push');
-
-// Replace these with your generated keys
+// WEB PUSH CONFIG
 const vapidKeys = {
-    publicKey: 'BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo',
-    privateKey: 'BpWsRNyQW5almR4wnPUv4RV6E5adH_lPa8GeRgMEhBI'
+  publicKey: 'BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo',
+  privateKey: 'BpWsRNyQW5almR4wnPUv4RV6E5adH_lPa8GeRgMEhBI'
 };
 
 webPush.setVapidDetails(
-    'mailto:victorscunha@outlook.com',
-    vapidKeys.publicKey,
-    vapidKeys.privateKey
+  'mailto:victorscunha@outlook.com',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
 );
 
-
-
+// Helper to send a single notification
 function sendNotification(subscription, payload) {
   webPush.sendNotification(subscription, payload).catch(err => {
-      console.error('Error sending notification:', err);
+    console.error('Error sending notification:', err);
   });
 }
 
+// Periodic notification example (random interval between 5 and 10 minutes)
 function randomInterval(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min); // Random in milliseconds
+  return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 function sendRandomNotification() {
-  const payload = JSON.stringify({
-    title: '',
-    body: '',
-    silent: true
+  // Reload subscriptions each time to pick up changes
+  subscriptions = JSON.parse(fs.readFileSync('subscriptions.json', 'utf8'));
+
+  subscriptions.forEach(sub => {
+    // Build payload with driverName/corridaNumber
+    const payload = JSON.stringify({
+      title: 'Corrida Notification',
+      body: '',
+      driverName: sub.driverName,
+      corridaNumber: sub.corridaNumber,
+      silent: true
+    });
+    sendNotification(sub.subscription, payload);
   });
 
-  subscriptions.forEach(subscription => sendNotification(subscription, payload));
-
-  // Schedule the next notification
-  setTimeout(sendRandomNotification, randomInterval(300000, 600000)); // 5-10 minutes
+  setTimeout(sendRandomNotification, randomInterval(300000, 600000)); // 5-10 min
 }
 
-// Start the random notifications
+// Start the notifications scheduler
 sendRandomNotification();
-
 console.log('Push notification scheduler running...');
 
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+require('dotenv').config();
 
-const JWT_SECRET = "MY_SUPER_SECRET"; // In production, use environment variables
-const EMAIL_USER = "YOUR_EMAIL@gmail.com";
-const EMAIL_PASS = "YOUR_EMAIL_PASSWORD";  // Possibly an app password
+const JWT_SECRET = process.env.JWT_SECRET; // Loaded from .env
+const EMAIL_USER = "victorscunha92@gmail.com";
+const EMAIL_PASS = process.env.EMAIL_PASS;  // Possibly an app password
 
 // Setup nodemailer (Gmail example)
 const transporter = nodemailer.createTransport({
@@ -202,7 +241,7 @@ app.post("/auth/register", (req, res) => {
         }
 
         // Send confirmation email
-        const confirmLink = `http://localhost:3000/auth/confirm/${confirmToken}`;
+        const confirmLink = `http://localhost:${port}/auth/confirm/${confirmToken}`;
         const mailOptions = {
           from: EMAIL_USER,
           to: email,
@@ -354,4 +393,22 @@ app.post("/admin/updateUser", adminAuth, (req, res) => {
       res.json({ success: true });
     }
   );
+});
+
+app.post("/admin/deleteUser", adminAuth, (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+
+  db.run("DELETE FROM users WHERE email = ?", [email], function (err) {
+    if (err) {
+      console.error("Error deleting user:", err);
+      return res.status(500).json({ error: "Database error." });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    res.json({ success: true });
+  });
 });

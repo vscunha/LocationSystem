@@ -1,19 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Access Pending</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - User Control</title>
+  <!-- Bootstrap CSS (CDN) -->
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
   />
 </head>
 <body class="bg-light">
-  <div class="container text-center mt-5">
-    <h2>Access Pending</h2>
-    <p>Your account is confirmed, but an administrator has not enabled your access yet.</p>
-    <img src="https://via.placeholder.com/300x200?text=Pending+Access" alt="Pending Access"/>
+  <div class="container mt-5">
+    <h2>User Control Panel</h2>
+    <p>Manage user accounts below:</p>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Confirmed</th>
+          <th>Enabled</th>
+          <th>Role</th>
+          <th colspan="2">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody">
+        <!-- Populated dynamically -->
+      </tbody>
+    </table>
   </div>
+
+  <!-- Delete Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteModalText"></p>
+          <div class="mb-3">
+            <label for="deleteConfirmEmail" class="form-label"
+              >Type the email again to confirm:</label
+            >
+            <input type="text" class="form-control" id="deleteConfirmEmail" />
+          </div>
+          <div id="deleteError" class="text-danger" style="display:none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS (Bundle w/ Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  let currentDeleteUserEmail = null; // Will store the email of the user we want to delete
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const role = localStorage.getItem("role");
+    const token = localStorage.getItem("token");
+
+    // If not admin, redirect to login or an error page
+    if (!token || role !== "admin") {
+      window.location.href = "/login.html";
+      return;
+    }
+
+    try {
+      const users = await fetchUsers(token);
+      populateUserTable(users);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+
+    // Handle click on the "Confirm Delete" button in the modal
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    confirmDeleteBtn.addEventListener("click", async () => {
+      const typedEmail = document.getElementById("deleteConfirmEmail").value.trim();
+      const deleteError = document.getElementById("deleteError");
+
+      if (!currentDeleteUserEmail || typedEmail !== currentDeleteUserEmail) {
+        deleteError.textContent = "Emails do not match!";
+        deleteError.style.display = "block";
+        return;
+      }
+
+      // Everything matches, proceed with deletion
+      deleteError.style.display = "none";
+      try {
+        await deleteUser(currentDeleteUserEmail, token);
+        // Hide modal
+        const deleteModal = bootstrap.Modal.getInstance(document.getElementById("deleteModal"));
+        deleteModal.hide();
+        // Re-fetch user list
+        const updatedUsers = await fetchUsers(token);
+        populateUserTable(updatedUsers);
+        alert("User deleted successfully.");
+      } catch (err) {
+        console.error("Delete error:", err);
+        deleteError.textContent = "Error deleting user.";
+        deleteError.style.display = "block";
+      }
+    });
+  });
+
+  // Fetch users from /admin/users endpoint
+  async function fetchUsers(token) {
+    const res = await fetch("/admin/users", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    if (!res.ok) {
+      throw new Error(`Server error: ${res.statusText}`);
+    }
+    return await res.json(); // expects array of user objects
+  }
+
+  // Populate table rows
+  function populateUserTable(users) {
+    const userTableBody = document.getElementById("userTableBody");
+    userTableBody.innerHTML = ""; // Clear old rows
+
+    users.forEach(user => {
+      const row = createUserRow(user);
+      userTableBody.appendChild(row);
+    });
+  }
+
+  // Create a single user row with "Email", "Confirmed", "Enabled", "Role", "Save", "Delete"
+  function createUserRow(user) {
+    const tr = document.createElement("tr");
+
+    // Email cell
+    const emailTd = document.createElement("td");
+    emailTd.textContent = user.email;
+    tr.appendChild(emailTd);
+
+    // Confirmed cell
+    const confirmedTd = document.createElement("td");
+    confirmedTd.textContent = user.confirmed ? "Yes" : "No";
+    tr.appendChild(confirmedTd);
+
+    // Enabled cell (checkbox)
+    const enabledTd = document.createElement("td");
+    const enabledCheckbox = document.createElement("input");
+    enabledCheckbox.type = "checkbox";
+    enabledCheckbox.checked = user.enabled;
+    enabledTd.appendChild(enabledCheckbox);
+    tr.appendChild(enabledTd);
+
+    // Role cell (select)
+    const roleTd = document.createElement("td");
+    const roleSelect = document.createElement("select");
+    const roles = ["standard", "admin"];
+    roles.forEach(r => {
+      const opt = document.createElement("option");
+      opt.value = r;
+      opt.text = r.charAt(0).toUpperCase() + r.slice(1); // "Standard" / "Admin"
+      roleSelect.appendChild(opt);
+    });
+    roleSelect.value = user.role || "standard";
+    roleTd.appendChild(roleSelect);
+    tr.appendChild(roleTd);
+
+    // Actions: Save + Delete
+    // Save cell
+    const saveTd = document.createElement("td");
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn btn-sm btn-primary";
+    saveBtn.textContent = "Save";
+    saveBtn.addEventListener("click", async () => {
+      const updated = {
+        email: user.email,
+        enabled: enabledCheckbox.checked,
+        role: roleSelect.value
+      };
+      try {
+        await updateUser(updated);
+        alert("User updated successfully");
+      } catch (err) {
+        console.error("Update error:", err);
+        alert("Failed to update user.");
+      }
+    });
+    saveTd.appendChild(saveBtn);
+    tr.appendChild(saveTd);
+
+    // Delete cell
+    const deleteTd = document.createElement("td");
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn btn-sm btn-danger";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () => {
+      showDeleteModal(user.email);
+    });
+    deleteTd.appendChild(deleteBtn);
+    tr.appendChild(deleteTd);
+
+    return tr;
+  }
+
+  // Update user on server
+  async function updateUser(userObj) {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/admin/updateUser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify(userObj),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to update user");
+    }
+  }
+
+  // Show the delete modal
+  function showDeleteModal(email) {
+    currentDeleteUserEmail = email;
+    // Reset the modal input and error
+    document.getElementById("deleteConfirmEmail").value = "";
+    document.getElementById("deleteError").style.display = "none";
+    document.getElementById("deleteModalText").textContent = 
+      `Are you sure you want to delete the user with email "${email}"? Please type the email again below to confirm.`;
+
+    const deleteModal = new bootstrap.Modal(document.getElementById("deleteModal"));
+    deleteModal.show();
+  }
+
+  // Send delete request to server
+  async function deleteUser(email, token) {
+    const res = await fetch("/admin/deleteUser", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to delete user");
+    }
+    return res.json();
+  }
+  </script>
 </body>
 </html>
