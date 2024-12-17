@@ -1,204 +1,213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Corrida Page</title>
-  <link rel="image" sizes="192x192" href="/imagems/icon-192.png">
-  <link rel="image" sizes="512x512" href="/imagems/icon-512.png">
-  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
-  <!-- Bootstrap CSS (CDN) -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Corrida Page</title>
+    <link rel="image" sizes="192x192" href="/imagems/icon-192.png" />
+    <link rel="image" sizes="512x512" href="/imagems/icon-512.png" />
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+    <!-- Bootstrap CSS (CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
 
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
 
-    .banner {
-      background: linear-gradient(to right, #6a11cb, #2575fc);
-      color: white;
-      padding: 2rem 1rem;
-      text-align: center;
-    }
+      .banner {
+        background: linear-gradient(to right, #6a11cb, #2575fc);
+        color: white;
+        padding: 2rem 1rem;
+        text-align: center;
+      }
 
-    .banner h1 {
-      margin: 0;
-      font-size: 2.5rem;
-    }
+      .banner h1 {
+        margin: 0;
+        font-size: 2.5rem;
+      }
 
-    .main-content {
-      padding: 2rem 1rem;
-    }
-  </style>
-</head>
-<body>
-  <!-- Nav Bar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid" id="mainNav">
-      <a class="navbar-brand" href="/index.html">My Race</a>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarSupportedContent"
-        aria-controls="navbarSupportedContent"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
+      .main-content {
+        padding: 2rem 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Nav Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid" id="mainNav">
+        <a class="navbar-brand" href="/index.html">My Race</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
 
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav ms-auto" id="navLinks">
-          <!-- Default always visible links -->
-          <li class="nav-item"><a class="nav-link" href="/login.html" id="loginLink">Login</a></li>
-          <li class="nav-item"><a class="nav-link" href="/register.html" id="registerLink">Register</a></li>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto" id="navLinks">
+            <!-- Default always visible links -->
+            <li class="nav-item">
+              <a class="nav-link" href="/login.html" id="loginLink">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/register.html" id="registerLink"
+                >Register</a
+              >
+            </li>
 
-          <!-- Map tab (hide by default) -->
-          <li class="nav-item d-none" id="mapTab">
-            <a class="nav-link" href="/map.html">Map</a>
-          </li>
-          <!-- Admin tab (hide by default) -->
-          <li class="nav-item d-none" id="adminTab">
-            <a class="nav-link" href="/admin.html">User Control</a>
-          </li>
-          <!-- Logout link (hide by default) -->
-          <li class="nav-item d-none" id="logoutLink">
-            <a class="nav-link" href="#" onclick="logout()">Logout</a>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Banner / Hero Section -->
-  <header class="banner">
-    <h1>Welcome to the Race Portal</h1>
-  </header>
-
-  <!-- Main Page Content -->
-  <div class="main-content container">
-    <h2>Main Page</h2>
-    <p>
-      This is the main page content. If you load this page with a
-      <code>?corrida=NUMBER</code> parameter in the URL, a modal will
-      automatically pop up showing the corrida number and driver name fields.
-    </p>
-    <p>Example: <code>https://example.com/index.html?corrida=123</code></p>
-  </div>
-
-  <!-- Modal -->
-  <div
-    class="modal fade"
-    id="corridaModal"
-    tabindex="-1"
-    aria-labelledby="corridaModalLabel"
-    aria-hidden="true"
-  >
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="corridaModalLabel">Corrida Details</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
+            <!-- Map tab (hide by default) -->
+            <li class="nav-item d-none" id="mapTab">
+              <a class="nav-link" href="/map.html">Map</a>
+            </li>
+            <!-- Admin tab (hide by default) -->
+            <li class="nav-item d-none" id="adminTab">
+              <a class="nav-link" href="/admin.html">User Control</a>
+            </li>
+            <!-- Logout link (hide by default) -->
+            <li class="nav-item d-none" id="logoutLink">
+              <a class="nav-link" href="#" onclick="logout()">Logout</a>
+            </li>
+          </ul>
         </div>
-        <div class="modal-body">
-          <p>
-            <strong>Corrida Number:</strong>
-            <span id="corridaNumber"></span>
-          </p>
-          <div class="mb-3">
-            <label for="driverName" class="form-label">Driver Name</label>
-            <input type="text" class="form-control" id="driverName" />
+      </div>
+    </nav>
+
+    <!-- Banner / Hero Section -->
+    <header class="banner">
+      <h1>Welcome to the Race Portal</h1>
+    </header>
+
+    <!-- Main Page Content -->
+    <div class="main-content container">
+      <h2>Main Page</h2>
+      <p>
+        This is the main page content. If you load this page with a
+        <code>?corrida=NUMBER</code> parameter in the URL, a modal will
+        automatically pop up showing the corrida number and driver name fields.
+      </p>
+      <p>Example: <code>https://example.com/index.html?corrida=123</code></p>
+    </div>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="corridaModal"
+      tabindex="-1"
+      aria-labelledby="corridaModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="corridaModalLabel">Corrida Details</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              <strong>Corrida Number:</strong>
+              <span id="corridaNumber"></span>
+            </p>
+            <div class="mb-3">
+              <label for="driverName" class="form-label">Driver Name</label>
+              <input type="text" class="form-control" id="driverName" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+              id="startRideBtn"
+            >
+              Start Ride
+            </button>
           </div>
         </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-primary"
-            data-bs-dismiss="modal"
-            id="startRideBtn"
-          >
-            Start Ride
-          </button>
-        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Bootstrap JS (Bundle w/ Popper) -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-  ></script>
+    <!-- Bootstrap JS (Bundle w/ Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js').then(() => {
-            console.log('Service Worker registered!');
-        }).catch(err => console.error('SW registration failed:', err));
-    }
-    document.addEventListener("DOMContentLoaded", function () {
-      const urlParams = new URLSearchParams(window.location.search);
-      const corridaParam = urlParams.get("corrida");
-
-      // If ?corrida=XYZ is present in the URL, show modal
-      if (corridaParam) {
-        document.getElementById("corridaNumber").innerText = corridaParam;
-        document.getElementById("corridaNumber").value = corridaParam;
-        const corridaModal = new bootstrap.Modal(document.getElementById("corridaModal"));
-        corridaModal.show();
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/service-worker.js")
+          .then(() => {
+            console.log("Service Worker registered!");
+          })
+          .catch((err) => console.error("SW registration failed:", err));
       }
+      document.addEventListener("DOMContentLoaded", function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const corridaParam = urlParams.get("corrida");
 
-      // Show/hide navbar items based on localStorage token and role
-      const token = localStorage.getItem("token");
-      const role = localStorage.getItem("role");
-
-      const loginLink = document.getElementById("loginLink");
-      const registerLink = document.getElementById("registerLink");
-      const mapTab = document.getElementById("mapTab");
-      const adminTab = document.getElementById("adminTab");
-      const logoutLink = document.getElementById("logoutLink");
-
-      if (token && role) {
-        // User is logged in
-        loginLink.classList.add("d-none");
-        registerLink.classList.add("d-none");
-        logoutLink.classList.remove("d-none");
-
-        // Show map tab for both roles
-        mapTab.classList.remove("d-none");
-
-        if (role === "admin") {
-          // Show admin tab
-          adminTab.classList.remove("d-none");
+        // If ?corrida=XYZ is present in the URL, show modal
+        if (corridaParam) {
+          document.getElementById("corridaNumber").innerText = corridaParam;
+          document.getElementById("corridaNumber").value = corridaParam;
+          const corridaModal = new bootstrap.Modal(
+            document.getElementById("corridaModal"),
+          );
+          corridaModal.show();
         }
-      } else {
-        // User not logged in
-        loginLink.classList.remove("d-none");
-        registerLink.classList.remove("d-none");
-        logoutLink.classList.add("d-none");
-        mapTab.classList.add("d-none");
-        adminTab.classList.add("d-none");
-      }
-    });
 
-    function logout() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      // Reload page or redirect
-      window.location.href = "/index.html";
+        // Show/hide navbar items based on localStorage token and role
+        const token = localStorage.getItem("token");
+        const role = localStorage.getItem("role");
+
+        const loginLink = document.getElementById("loginLink");
+        const registerLink = document.getElementById("registerLink");
+        const mapTab = document.getElementById("mapTab");
+        const adminTab = document.getElementById("adminTab");
+        const logoutLink = document.getElementById("logoutLink");
+
+        if (token && role) {
+          // User is logged in
+          loginLink.classList.add("d-none");
+          registerLink.classList.add("d-none");
+          logoutLink.classList.remove("d-none");
+
+          // Show map tab for both roles
+          mapTab.classList.remove("d-none");
+
+          if (role === "admin") {
+            // Show admin tab
+            adminTab.classList.remove("d-none");
+          }
+        } else {
+          // User not logged in
+          loginLink.classList.remove("d-none");
+          registerLink.classList.remove("d-none");
+          logoutLink.classList.add("d-none");
+          mapTab.classList.add("d-none");
+          adminTab.classList.add("d-none");
+        }
+      });
+
+      function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        // Reload page or redirect
+        window.location.href = "/index.html";
       }
-  </script>
-  <script src="app.js"></script>
-</body>
+    </script>
+    <script src="app.js"></script>
+  </body>
 </html>

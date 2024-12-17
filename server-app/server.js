@@ -1,9 +1,9 @@
-const fs = require('fs');
-const webPush = require('web-push');
-const sqlite3 = require('sqlite3').verbose();
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+const fs = require("fs");
+const webPush = require("web-push");
+const sqlite3 = require("sqlite3").verbose();
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
 
 // Express setup
 const app = express();
@@ -12,11 +12,11 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Connect to SQLite database (creates the file if it doesn't exist)
-const db = new sqlite3.Database('./locations.db', (err) => {
+const db = new sqlite3.Database("./locations.db", (err) => {
   if (err) {
-    console.error('Error opening database:', err.message);
+    console.error("Error opening database:", err.message);
   } else {
-    console.log('Connected to SQLite database.');
+    console.log("Connected to SQLite database.");
   }
 });
 
@@ -33,9 +33,9 @@ db.run(
   )`,
   (err) => {
     if (err) {
-      console.error('Error creating table:', err.message);
+      console.error("Error creating table:", err.message);
     }
-  }
+  },
 );
 
 // Create table if it doesn't exist
@@ -51,18 +51,18 @@ db.run(
   )`,
   (err) => {
     if (err) {
-      console.error('Error creating table:', err.message);
+      console.error("Error creating table:", err.message);
     }
-  }
+  },
 );
 
 // POST endpoint to receive location data
-app.post('/api/location', (req, res) => {
+app.post("/api/location", (req, res) => {
   const { latitude, longitude, driverName, corridaNumber } = req.body;
 
   // Validate latitude/longitude
-  if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-    return res.status(400).json({ error: 'Invalid latitude or longitude.' });
+  if (typeof latitude !== "number" || typeof longitude !== "number") {
+    return res.status(400).json({ error: "Invalid latitude or longitude." });
   }
 
   // Optional: Validate driverName, corrida if needed (e.g. typeof string, not empty)
@@ -74,65 +74,87 @@ app.post('/api/location', (req, res) => {
     VALUES (?, ?, ?, ?)
   `);
 
-  stmt.run(latitude, longitude, driverName || null, corridaNumber || null, function (err) {
-    if (err) {
-      console.error('Error inserting data:', err.message);
-      return res.status(500).json({ error: 'Failed to save location data.' });
-    } else {
-      console.log(
-        `Location data saved with ID: ${this.lastID}, 
+  stmt.run(
+    latitude,
+    longitude,
+    driverName || null,
+    corridaNumber || null,
+    function (err) {
+      if (err) {
+        console.error("Error inserting data:", err.message);
+        return res.status(500).json({ error: "Failed to save location data." });
+      } else {
+        console.log(
+          `Location data saved with ID: ${this.lastID}, 
          driverName: ${driverName}, 
          corridaNumber: ${corridaNumber}, 
-         timestamp: ${new Date().toLocaleString()}`
-      );
-      return res.status(200).json({ message: 'Location data saved.', id: this.lastID });
-    }
-  });
+         timestamp: ${new Date().toLocaleString()}`,
+        );
+        return res
+          .status(200)
+          .json({ message: "Location data saved.", id: this.lastID });
+      }
+    },
+  );
 
   stmt.finalize();
 });
 
-if (!fs.existsSync('subscriptions.json')) {
-  fs.writeFileSync('subscriptions.json', JSON.stringify([]));
+if (!fs.existsSync("subscriptions.json")) {
+  fs.writeFileSync("subscriptions.json", JSON.stringify([]));
 }
 // Load subscriptions from file
-let subscriptions = require('./subscriptions.json');
+let subscriptions = require("./subscriptions.json");
 
 // POST endpoint to store or update subscription by driverName + corridaNumber
-app.post('/api/subscribe', (req, res) => {
+app.post("/api/subscribe", (req, res) => {
   // Expect body like: { driverName, corridaNumber, subscription: {...} }
   const { driverName, corridaNumber, subscription } = req.body;
 
   if (!driverName || !corridaNumber || !subscription) {
-    return res.status(400).json({ error: 'Missing driverName, corridaNumber, or subscription.' });
+    return res
+      .status(400)
+      .json({ error: "Missing driverName, corridaNumber, or subscription." });
   }
 
   // Find existing subscription with matching driverName + corridaNumber
   const existingIndex = subscriptions.findIndex(
-    sub => sub.driverName === driverName && sub.corridaNumber === corridaNumber
+    (sub) =>
+      sub.driverName === driverName && sub.corridaNumber === corridaNumber,
   );
 
   if (existingIndex >= 0) {
     // REPLACE the old subscription with the new one
     subscriptions[existingIndex].subscription = subscription;
-    console.log(`Updated subscription for driverName=${driverName}, corridaNumber=${corridaNumber}`);
+    console.log(
+      `Updated subscription for driverName=${driverName}, corridaNumber=${corridaNumber}`,
+    );
   } else {
     // Add a new subscription object
     subscriptions.push({ driverName, corridaNumber, subscription });
-    console.log(`New subscription added: driverName=${driverName}, corridaNumber=${corridaNumber}`);
+    console.log(
+      `New subscription added: driverName=${driverName}, corridaNumber=${corridaNumber}`,
+    );
   }
 
   // Save updated subscriptions to file
-  fs.writeFileSync('subscriptions.json', JSON.stringify(subscriptions, null, 2));
-  return res.status(201).json({ message: 'Subscription stored/updated successfully.' });
+  fs.writeFileSync(
+    "subscriptions.json",
+    JSON.stringify(subscriptions, null, 2),
+  );
+  return res
+    .status(201)
+    .json({ message: "Subscription stored/updated successfully." });
 });
 
 // GET endpoint to retrieve all location data
-app.get('/api/location', (req, res) => {
-  db.all('SELECT * FROM locations', [], (err, rows) => {
+app.get("/api/location", (req, res) => {
+  db.all("SELECT * FROM locations", [], (err, rows) => {
     if (err) {
-      console.error('Error retrieving data:', err.message);
-      return res.status(500).json({ error: 'Failed to retrieve location data.' });
+      console.error("Error retrieving data:", err.message);
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve location data." });
     } else {
       return res.status(200).json(rows);
     }
@@ -146,20 +168,21 @@ app.listen(port, () => {
 
 // WEB PUSH CONFIG
 const vapidKeys = {
-  publicKey: 'BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo',
-  privateKey: 'BpWsRNyQW5almR4wnPUv4RV6E5adH_lPa8GeRgMEhBI'
+  publicKey:
+    "BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo",
+  privateKey: "BpWsRNyQW5almR4wnPUv4RV6E5adH_lPa8GeRgMEhBI",
 };
 
 webPush.setVapidDetails(
-  'mailto:victorscunha@outlook.com',
+  "mailto:victorscunha@outlook.com",
   vapidKeys.publicKey,
-  vapidKeys.privateKey
+  vapidKeys.privateKey,
 );
 
 // Helper to send a single notification
 function sendNotification(subscription, payload) {
-  webPush.sendNotification(subscription, payload).catch(err => {
-    console.error('Error sending notification:', err);
+  webPush.sendNotification(subscription, payload).catch((err) => {
+    console.error("Error sending notification:", err);
   });
 }
 
@@ -170,16 +193,16 @@ function randomInterval(min, max) {
 
 function sendRandomNotification() {
   // Reload subscriptions each time to pick up changes
-  subscriptions = JSON.parse(fs.readFileSync('subscriptions.json', 'utf8'));
+  subscriptions = JSON.parse(fs.readFileSync("subscriptions.json", "utf8"));
 
-  subscriptions.forEach(sub => {
+  subscriptions.forEach((sub) => {
     // Build payload with driverName/corridaNumber
     const payload = JSON.stringify({
-      title: 'Corrida Notification',
-      body: '',
+      title: "Corrida Notification",
+      body: "",
       driverName: sub.driverName,
       corridaNumber: sub.corridaNumber,
-      silent: true
+      silent: true,
     });
     sendNotification(sub.subscription, payload);
   });
@@ -189,16 +212,16 @@ function sendRandomNotification() {
 
 // Start the notifications scheduler
 sendRandomNotification();
-console.log('Push notification scheduler running...');
+console.log("Push notification scheduler running...");
 
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const path = require("path");
-require('dotenv').config();
+require("dotenv").config();
 
 const JWT_SECRET = process.env.JWT_SECRET; // Loaded from .env
 const EMAIL_USER = "victorscunha92@gmail.com";
-const EMAIL_PASS = process.env.EMAIL_PASS;  // Possibly an app password
+const EMAIL_PASS = process.env.EMAIL_PASS; // Possibly an app password
 
 // Setup nodemailer (Gmail example)
 const transporter = nodemailer.createTransport({
@@ -258,9 +281,11 @@ app.post("/auth/register", (req, res) => {
             console.error("Error sending email:", err3);
             return res.status(500).json({ error: "Error sending email." });
           }
-          return res.json({ message: "User registered. Confirmation email sent." });
+          return res.json({
+            message: "User registered. Confirmation email sent.",
+          });
         });
-      }
+      },
     );
   });
 });
@@ -283,14 +308,18 @@ app.get("/auth/confirm/:token", (req, res) => {
           return res.status(400).send("Invalid confirmation link.");
         }
         // Update confirmed=1
-        db.run("UPDATE users SET confirmed = 1 WHERE id = ?", [user.id], function (err2) {
-          if (err2) {
-            return res.status(500).send("Database update error.");
-          }
-          // Redirect to confirm.html after successful confirmation
-          res.redirect("/confirm.html");
-        });
-      }
+        db.run(
+          "UPDATE users SET confirmed = 1 WHERE id = ?",
+          [user.id],
+          function (err2) {
+            if (err2) {
+              return res.status(500).send("Database update error.");
+            }
+            // Redirect to confirm.html after successful confirmation
+            res.redirect("/confirm.html");
+          },
+        );
+      },
     );
   } catch (err) {
     res.status(400).send("Invalid or expired token.");
@@ -318,7 +347,9 @@ app.post("/auth/login", (req, res) => {
         return res.status(401).json({ error: "Invalid credentials." });
       }
       if (user.confirmed === 0) {
-        return res.status(403).json({ error: "Please confirm your email first." });
+        return res
+          .status(403)
+          .json({ error: "Please confirm your email first." });
       }
       // If not enabled => role = null (they see pending)
       let role = user.role; // might be "admin" or "standard" or null
@@ -326,9 +357,11 @@ app.post("/auth/login", (req, res) => {
         role = null;
       }
       // Generate JWT
-      const token = jwt.sign({ email: user.email, role }, JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign({ email: user.email, role }, JWT_SECRET, {
+        expiresIn: "1h",
+      });
       res.json({ token, role });
-    }
+    },
   );
 });
 
@@ -355,19 +388,25 @@ function adminAuth(req, res, next) {
  *  Admin-only route to list all users
  */
 app.get("/admin/users", adminAuth, (req, res) => {
-  db.all("SELECT id, email, confirmed, enabled, role FROM users", [], (err, rows) => {
-    if (err) {
-      console.error("Error fetching users:", err);
-      return res.status(500).json({ error: "Database error." });
-    }
-    // Return list of users
-    res.json(rows.map(u => ({
-      email: u.email,
-      confirmed: !!u.confirmed,
-      enabled: !!u.enabled,
-      role: u.role,
-    })));
-  });
+  db.all(
+    "SELECT id, email, confirmed, enabled, role FROM users",
+    [],
+    (err, rows) => {
+      if (err) {
+        console.error("Error fetching users:", err);
+        return res.status(500).json({ error: "Database error." });
+      }
+      // Return list of users
+      res.json(
+        rows.map((u) => ({
+          email: u.email,
+          confirmed: !!u.confirmed,
+          enabled: !!u.enabled,
+          role: u.role,
+        })),
+      );
+    },
+  );
 });
 
 /**
@@ -391,7 +430,7 @@ app.post("/admin/updateUser", adminAuth, (req, res) => {
         return res.status(404).json({ error: "User not found." });
       }
       res.json({ success: true });
-    }
+    },
   );
 });
 
