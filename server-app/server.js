@@ -57,7 +57,7 @@ db.run(
 );
 
 // POST endpoint to receive location data
-app.post("/api/location", (req, res) => {
+app.post("/location", (req, res) => {
   const { latitude, longitude, driverName, corridaNumber } = req.body;
 
   // Validate latitude/longitude
@@ -107,7 +107,7 @@ if (!fs.existsSync("subscriptions.json")) {
 let subscriptions = require("./subscriptions.json");
 
 // POST endpoint to store or update subscription by driverName + corridaNumber
-app.post("/api/subscribe", (req, res) => {
+app.post("/subscribe", (req, res) => {
   // Expect body like: { driverName, corridaNumber, subscription: {...} }
   const { driverName, corridaNumber, subscription } = req.body;
 
@@ -148,7 +148,7 @@ app.post("/api/subscribe", (req, res) => {
 });
 
 // GET endpoint to retrieve all location data
-app.get("/api/location", (req, res) => {
+app.get("/location", (req, res) => {
   db.all("SELECT * FROM locations", [], (err, rows) => {
     if (err) {
       console.error("Error retrieving data:", err.message);
@@ -162,7 +162,7 @@ app.get("/api/location", (req, res) => {
 });
 
 // POST endpoint to retrieve the most recent location for each unique driverName
-app.post("/api/recent-locations", (req, res) => {
+app.post("/recent-locations", (req, res) => {
   const query = `
     SELECT driverName, latitude, longitude, corridaNumber, MAX(timestamp) as timestamp
     FROM locations
@@ -172,7 +172,9 @@ app.post("/api/recent-locations", (req, res) => {
   db.all(query, [], (err, rows) => {
     if (err) {
       console.error("Error retrieving recent locations:", err.message);
-      return res.status(500).json({ error: "Failed to retrieve recent locations." });
+      return res
+        .status(500)
+        .json({ error: "Failed to retrieve recent locations." });
     } else {
       return res.status(200).json(rows);
     }

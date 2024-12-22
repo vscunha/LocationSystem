@@ -18,7 +18,7 @@
         background-color: #fff;
         border: 2px solid #fff;
         border-radius: 3px;
-        box-shadow: 0 2px 6px rgba(0,0,0,.3);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         cursor: pointer;
         margin: 10px;
         padding: 0;
@@ -31,7 +31,7 @@
         width: 100%;
       }
       .info-window {
-        font-family: 'Roboto', 'Arial', sans-serif;
+        font-family: "Roboto", "Arial", sans-serif;
         font-size: 14px;
         line-height: 1.6;
       }
@@ -70,7 +70,10 @@
           .then((response) => response.json())
           .then((data) => {
             data.forEach((location) => {
-              const position = { lat: location.latitude, lng: location.longitude };
+              const position = {
+                lat: location.latitude,
+                lng: location.longitude,
+              };
               const marker = new google.maps.Marker({
                 position: position,
                 map: map,
@@ -103,7 +106,9 @@
         const centerControl = new CenterControl(centerControlDiv, map, bounds);
 
         centerControlDiv.index = 1;
-        map.controls[google.maps.ControlPosition.RIGHT_TOP].push(centerControlDiv);
+        map.controls[google.maps.ControlPosition.RIGHT_TOP].push(
+          centerControlDiv,
+        );
       }
 
       function CenterControl(controlDiv, map, bounds) {
@@ -113,7 +118,8 @@
         controlDiv.appendChild(controlUI);
 
         const controlIcon = document.createElement("div");
-        controlIcon.style.backgroundImage = "url('https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-1x.png')";
+        controlIcon.style.backgroundImage =
+          "url('https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-1x.png')";
         controlIcon.style.backgroundSize = "180px 18px";
         controlIcon.style.backgroundPosition = "0 0";
         controlIcon.style.width = "18px";

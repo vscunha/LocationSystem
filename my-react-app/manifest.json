@@ -1,0 +1,33 @@
+{
+    "name": "PWA de Localização",
+    "short_name": "Locação PWA",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color":"#ffffff",
+    "orientation": "portrait",
+    "description": "Uma PWA que envia a localização do usuário.",
+    "icons": [
+      {
+        "src": "images/icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "images/icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "screenshots": [    
+      {
+
+        "src": "images/image1.png",
+        "sizes": "640x320",
+        "type": "image/png",
+        "form_factor": "narrow",
+        "label": "Application"
+      }
+    ]
+  }
+  
