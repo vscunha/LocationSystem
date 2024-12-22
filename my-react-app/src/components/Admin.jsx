@@ -1,5 +1,5 @@
 // src/components/Admin.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 const Admin = () => {
   const [users, setUsers] = useState([]);
@@ -32,11 +32,14 @@ const Admin = () => {
     if (window.confirm(`Are you sure you want to delete user ${email}?`)) {
       await fetch("/api/admin/deleteUser", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ email }),
       });
 
-      setUsers(users.filter(user => user.email !== email));
+      setUsers(users.filter((user) => user.email !== email));
     }
   };
 
@@ -61,7 +64,12 @@ const Admin = () => {
               <td>{user.enabled ? "Yes" : "No"}</td>
               <td>{user.role}</td>
               <td>
-                <button className="btn btn-danger" onClick={() => handleDelete(user.email)}>Delete</button>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => handleDelete(user.email)}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

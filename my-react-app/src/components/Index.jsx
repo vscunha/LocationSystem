@@ -1,6 +1,6 @@
 // src/components/Index.jsx
-import React, { useEffect, useState } from 'react';
-import * as bootstrap from 'bootstrap';
+import React, { useEffect, useState } from "react";
+import * as bootstrap from "bootstrap";
 
 const serverUrl = "/api/location"; // URL configurable
 
@@ -13,7 +13,7 @@ const Index = () => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const urlParams = new URLSearchParams(window.location.search);
-    const corridaParam = urlParams.get('corrida');
+    const corridaParam = urlParams.get("corrida");
 
     if (token && role) {
       document.getElementById("loginLink").classList.add("d-none");
@@ -29,16 +29,16 @@ const Index = () => {
     let modalInstance = null;
 
     if (corridaParam) {
-      const corridaNumberElement = document.getElementById('corridaNumber');
-      const driverNameElement = document.getElementById('driverName');
-      const modalElement = document.getElementById('corridaModal');
+      const corridaNumberElement = document.getElementById("corridaNumber");
+      const driverNameElement = document.getElementById("driverName");
+      const modalElement = document.getElementById("corridaModal");
 
       if (corridaNumberElement) {
         corridaNumberElement.innerText = corridaParam;
       }
 
       if (driverNameElement) {
-        driverNameElement.value = ''; // Clear driver name input
+        driverNameElement.value = ""; // Clear driver name input
       }
 
       modalInstance = new bootstrap.Modal(modalElement);
@@ -47,8 +47,8 @@ const Index = () => {
       modalInstance.show();
 
       // Add event listener to ensure cleanup of backdrop
-      modalElement.addEventListener('hidden.bs.modal', () => {
-        const backdrop = document.querySelector('.modal-backdrop');
+      modalElement.addEventListener("hidden.bs.modal", () => {
+        const backdrop = document.querySelector(".modal-backdrop");
         if (backdrop) {
           backdrop.remove(); // Remove the backdrop manually
         }
@@ -59,7 +59,7 @@ const Index = () => {
       if (modalInstance) {
         modalInstance.hide();
       }
-      const backdrop = document.querySelector('.modal-backdrop');
+      const backdrop = document.querySelector(".modal-backdrop");
       if (backdrop) {
         backdrop.remove(); // Ensure the backdrop is removed during cleanup
       }
@@ -73,49 +73,55 @@ const Index = () => {
       setDeferredPrompt(e); // Save the event for later
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     // Check if PWA is already installed
-    window.addEventListener('appinstalled', () => {
-      console.log('PWA installed!');
+    window.addEventListener("appinstalled", () => {
+      console.log("PWA installed!");
       setIsPwaInstalled(true);
     });
 
     // Cleanup listeners
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
     };
   }, []);
 
   useEffect(() => {
     // Register the service worker
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker
-        .register('/service-worker.js')
+        .register("/service-worker.js")
         .then((registration) => {
-          console.log('Service Worker registered:', registration);
+          console.log("Service Worker registered:", registration);
 
-          if ('periodicSync' in registration) {
-            navigator.permissions.query({ name: 'periodic-background-sync' })
+          if ("periodicSync" in registration) {
+            navigator.permissions
+              .query({ name: "periodic-background-sync" })
               .then((status) => {
-                if (status.state === 'granted') {
-                  registration.periodicSync.register('send-location', {
+                if (status.state === "granted") {
+                  registration.periodicSync.register("send-location", {
                     minInterval: 30 * 1000, // 30 seconds
                   });
-                  console.log('Periodic background sync registered.');
+                  console.log("Periodic background sync registered.");
                 }
               });
           }
 
-          navigator.serviceWorker.addEventListener('message', async (event) => {
-            if (event.data.type === 'REQUEST_LOCATION') {
-              console.log('Service Worker requested location');
+          navigator.serviceWorker.addEventListener("message", async (event) => {
+            if (event.data.type === "REQUEST_LOCATION") {
+              console.log("Service Worker requested location");
               const position = await getCurrentPosition();
-              const driverName = localStorage.getItem('driverName') || 'Unknown Driver';
-              const corridaNumber = localStorage.getItem('corridaNumber') || 'N/A';
+              const driverName =
+                localStorage.getItem("driverName") || "Unknown Driver";
+              const corridaNumber =
+                localStorage.getItem("corridaNumber") || "N/A";
 
               registration.active.postMessage({
-                type: 'LOCATION_RESPONSE',
+                type: "LOCATION_RESPONSE",
                 payload: {
                   latitude: position.coords.latitude,
                   longitude: position.coords.longitude,
@@ -128,18 +134,20 @@ const Index = () => {
           });
 
           // Push Notifications
-          if ('Notification' in window && registration.pushManager) {
+          if ("Notification" in window && registration.pushManager) {
             Notification.requestPermission().then((permission) => {
-              if (permission === 'granted') {
-                console.log('Notification permission granted!');
+              if (permission === "granted") {
+                console.log("Notification permission granted!");
                 subscribeToPushNotifications(registration);
               } else {
-                console.log('Notification permission denied.');
+                console.log("Notification permission denied.");
               }
             });
           }
         })
-        .catch((error) => console.error('Service Worker registration failed:', error));
+        .catch((error) =>
+          console.error("Service Worker registration failed:", error),
+        );
     }
   }, []);
 
@@ -148,23 +156,25 @@ const Index = () => {
       .subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(
-          'BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo',
+          "BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo",
         ),
       })
       .then((subscription) => {
-        console.log('Push subscription:', subscription);
-        fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        console.log("Push subscription:", subscription);
+        fetch("/api/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(subscription),
         });
       })
-      .catch((error) => console.error('Push subscription failed:', error));
+      .catch((error) => console.error("Push subscription failed:", error));
   };
 
   const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
     const rawData = atob(base64);
     return new Uint8Array([...rawData].map((char) => char.charCodeAt(0)));
   };
@@ -190,39 +200,45 @@ const Index = () => {
   };
 
   const startGeolocation = () => {
-    handleInstallClick()
-    const driverName = localStorage.getItem('driverName') || 'Unknown Driver';
-    const corridaNumber = localStorage.getItem('corridaNumber') || 'N/A';
+    handleInstallClick();
+    const driverName = localStorage.getItem("driverName") || "Unknown Driver";
+    const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
 
-    if ('geolocation' in navigator) {
+    if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
           fetch(serverUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ latitude, longitude, driverName, corridaNumber }),
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude,
+              longitude,
+              driverName,
+              corridaNumber,
+            }),
           });
         },
         (error) => {
-          console.error('Error obtaining location:', error);
+          console.error("Error obtaining location:", error);
         },
         { enableHighAccuracy: true },
       );
     } else {
-      alert('Geolocation is not supported on this device.');
+      alert("Geolocation is not supported on this device.");
     }
   };
 
   useEffect(() => {
     const intervalId = setInterval(() => {
       navigator.geolocation.getCurrentPosition((position) => {
-        const driverName = localStorage.getItem('driverName') || 'Unknown Driver';
-        const corridaNumber = localStorage.getItem('corridaNumber') || 'N/A';
+        const driverName =
+          localStorage.getItem("driverName") || "Unknown Driver";
+        const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
 
         fetch(serverUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -259,7 +275,9 @@ const Index = () => {
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title" id="corridaModalLabel">Corrida Details</h5>
+              <h5 className="modal-title" id="corridaModalLabel">
+                Corrida Details
+              </h5>
               <button
                 type="button"
                 className="btn-close"
@@ -273,7 +291,9 @@ const Index = () => {
                 <span id="corridaNumber"></span>
               </p>
               <div className="mb-3">
-                <label htmlFor="driverName" className="form-label">Driver Name</label>
+                <label htmlFor="driverName" className="form-label">
+                  Driver Name
+                </label>
                 <input type="text" className="form-control" id="driverName" />
               </div>
             </div>

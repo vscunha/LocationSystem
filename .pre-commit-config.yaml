@@ -8,7 +8,7 @@ repos:
         entry: npx eslint
         language: system
         pass_filenames: true
-        files: \.js$            # Only run on JS files
+        files: \.(js|jsx)$            # Only run on JS files
         stages: [commit]
 
       # 2) Prettier (format JS, CSS, HTML, etc.)
@@ -17,7 +17,7 @@ repos:
         entry: npx prettier --write
         language: system
         pass_filenames: true
-        files: \.(js|css|html)$
+        files: \.(js|jsx|css|html)$
         stages: [commit]
 
       # You can add more hooks here (stylelint, cspell, etc.)
