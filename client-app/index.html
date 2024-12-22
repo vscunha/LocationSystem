@@ -38,50 +38,7 @@
     </style>
   </head>
   <body>
-    <!-- Nav Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid" id="mainNav">
-        <a class="navbar-brand" href="/index.html">My Race</a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav ms-auto" id="navLinks">
-            <!-- Default always visible links -->
-            <li class="nav-item">
-              <a class="nav-link" href="/login.html" id="loginLink">Login</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/register.html" id="registerLink"
-                >Register</a
-              >
-            </li>
-
-            <!-- Map tab (hide by default) -->
-            <li class="nav-item d-none" id="mapTab">
-              <a class="nav-link" href="/map.html">Map</a>
-            </li>
-            <!-- Admin tab (hide by default) -->
-            <li class="nav-item d-none" id="adminTab">
-              <a class="nav-link" href="/admin.html">User Control</a>
-            </li>
-            <!-- Logout link (hide by default) -->
-            <li class="nav-item d-none" id="logoutLink">
-              <a class="nav-link" href="#" onclick="logout()">Logout</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
+    <div id="navbar"></div>
 
     <!-- Banner / Hero Section -->
     <header class="banner">
@@ -207,6 +164,13 @@
         // Reload page or redirect
         window.location.href = "/index.html";
       }
+
+      // Load navbar
+      fetch("/navbar.html")
+        .then((response) => response.text())
+        .then((data) => {
+          document.getElementById("navbar").innerHTML = data;
+        });
     </script>
     <script src="app.js"></script>
   </body>

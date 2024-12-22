@@ -231,3 +231,49 @@ setInterval(async () => {
     });
   }
 }, 30000); // 30s (adjust as needed)
+
+// Load navbar and handle login state
+fetch("/navbar.html")
+  .then((response) => response.text())
+  .then((data) => {
+    document.getElementById("navbar").innerHTML = data;
+
+    // Show/hide navbar items based on localStorage token and role
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    const loginLink = document.getElementById("loginLink");
+    const registerLink = document.getElementById("registerLink");
+    const mapTab = document.getElementById("mapTab");
+    const adminTab = document.getElementById("adminTab");
+    const logoutLink = document.getElementById("logoutLink");
+
+    if (token && role) {
+      // User is logged in
+      loginLink.classList.add("d-none");
+      registerLink.classList.add("d-none");
+      logoutLink.classList.remove("d-none");
+
+      // Show map tab for both roles
+      mapTab.classList.remove("d-none");
+
+      if (role === "admin") {
+        // Show admin tab
+        adminTab.classList.remove("d-none");
+      }
+    } else {
+      // User not logged in
+      loginLink.classList.remove("d-none");
+      registerLink.classList.remove("d-none");
+      logoutLink.classList.add("d-none");
+      mapTab.classList.add("d-none");
+      adminTab.classList.add("d-none");
+    }
+  });
+
+function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  // Reload page or redirect
+  window.location.href = "/index.html";
+}

@@ -10,6 +10,8 @@
     />
   </head>
   <body class="bg-light">
+    <div id="navbar"></div>
+
     <div class="container text-center mt-5">
       <h2>Your email has been confirmed!</h2>
       <p>
@@ -24,5 +26,22 @@
         <a href="/login.html" class="btn btn-primary">Login Page</a>
       </div>
     </div>
+
+    <script>
+      function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        // Reload page or redirect
+        window.location.href = "/index.html";
+      }
+
+      // Load navbar
+      fetch("/navbar.html")
+        .then((response) => response.text())
+        .then((data) => {
+          document.getElementById("navbar").innerHTML = data;
+        });
+    </script>
+    <script src="app.js"></script>
   </body>
 </html>

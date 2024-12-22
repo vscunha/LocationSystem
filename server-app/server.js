@@ -161,6 +161,24 @@ app.get("/api/location", (req, res) => {
   });
 });
 
+// POST endpoint to retrieve the most recent location for each unique driverName
+app.post("/api/recent-locations", (req, res) => {
+  const query = `
+    SELECT driverName, latitude, longitude, corridaNumber, MAX(timestamp) as timestamp
+    FROM locations
+    GROUP BY driverName
+  `;
+
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error("Error retrieving recent locations:", err.message);
+      return res.status(500).json({ error: "Failed to retrieve recent locations." });
+    } else {
+      return res.status(200).json(rows);
+    }
+  });
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

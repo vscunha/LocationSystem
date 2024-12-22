@@ -11,6 +11,8 @@
     />
   </head>
   <body class="bg-light">
+    <div id="navbar"></div>
+
     <div class="container">
       <div class="row justify-content-center mt-5">
         <div class="col-md-6">
@@ -72,6 +74,21 @@
               "text-danger";
           }
         });
+
+      function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        // Reload page or redirect
+        window.location.href = "/index.html";
+      }
+
+      // Load navbar
+      fetch("/navbar.html")
+        .then((response) => response.text())
+        .then((data) => {
+          document.getElementById("navbar").innerHTML = data;
+        });
     </script>
+    <script src="app.js"></script>
   </body>
 </html>
