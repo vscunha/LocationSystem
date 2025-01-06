@@ -1,152 +1,138 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  GoogleMap,
+  LoadScript,
+  Marker,
+  InfoWindow,
+} from "@react-google-maps/api";
+import "./Map.scss"; // Import the SASS file
 
 const Map = () => {
-  const mapRef = useRef(null);
+  const [map, setMap] = useState(null);
+  const [markers, setMarkers] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [mapCenter, setMapCenter] = useState({
+    lat: -23.55052,
+    lng: -46.633308,
+  });
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
-    if (!window.google) {
-      loadGoogleMapsScript()
-        .then(() => {
-          initMap();
-        })
-        .catch((err) => {
-          console.error("Google Maps script failed to load", err);
-        });
-    } else {
-      initMap();
-    }
-  }, []);
-
-  const loadGoogleMapsScript = () => {
-    return new Promise((resolve, reject) => {
-      const existingScript = document.getElementById("google-maps-script");
-      if (existingScript) {
-        resolve();
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.id = "google-maps-script";
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
-      script.async = true;
-      script.defer = true;
-
-      script.onload = () => resolve();
-      script.onerror = (error) => reject(error);
-
-      document.body.appendChild(script);
-    });
-  };
-
-  const initMap = () => {
-    const mapElement = mapRef.current;
-
-    if (!mapElement) {
-      console.error("Map element not found.");
-      return;
-    }
-
-    const map = new google.maps.Map(mapElement, {
-      zoom: 10,
-      center: { lat: -23.55052, lng: -46.633308 }, // São Paulo as default
-    });
-
-    const bounds = new google.maps.LatLngBounds();
-
-    // Add the custom CenterControl button
-    const centerControlDiv = document.createElement("div");
-    CenterControl(centerControlDiv, map, bounds);
-    centerControlDiv.index = 1;
-    map.controls[google.maps.ControlPosition.RIGHT_TOP].push(centerControlDiv);
-
-    // Fetch locations and add markers
     fetch("/api/recent-locations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     })
       .then((response) => response.json())
       .then((data) => {
-        data.forEach((location) => {
-          if (
-            !location.driverName ||
-            !location.corridaNumber ||
-            location.driverName === "Unknown Driver" ||
-            location.corridaNumber === "N/A"
-          ) {
-            return;
+        const validLocations = data.filter(
+          (location) =>
+            location.driverName &&
+            location.corridaNumber &&
+            location.driverName !== "Unknown Driver" &&
+            location.corridaNumber !== "N/A",
+        );
+
+        setMarkers(validLocations);
+
+        if (validLocations.length > 0) {
+          const bounds = new window.google.maps.LatLngBounds();
+          validLocations.forEach((location) => {
+            bounds.extend({ lat: location.latitude, lng: location.longitude });
+          });
+          if (map) {
+            map.fitBounds(bounds);
+          } else {
+            const center = bounds.getCenter();
+            setMapCenter({ lat: center.lat(), lng: center.lng() });
           }
-
-          const position = { lat: location.latitude, lng: location.longitude };
-
-          const marker = new google.maps.Marker({
-            position,
-            map,
-            title: `${location.driverName} - ${location.corridaNumber}`,
-          });
-
-          bounds.extend(position);
-
-          const infoWindow = new google.maps.InfoWindow({
-            content: `
-              <div>
-              <h5>Driver: ${location.driverName}</h5>
-              <p>Corrida: ${location.corridaNumber}</p>
-              <p>Última localização: ${new Date(location.timestamp + "Z").toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
-              </div>
-            `,
-          });
-
-          marker.addListener("click", () => {
-            // Close any previously opened InfoWindow
-            if (window.currentInfoWindow) {
-              window.currentInfoWindow.close();
-            }
-            infoWindow.open(map, marker);
-            window.currentInfoWindow = infoWindow;
-          });
-        });
-
-        map.fitBounds(bounds);
+        }
       })
       .catch((error) => console.error("Error fetching locations:", error));
+  }, [map]);
+
+  useEffect(() => {
+    if (map && markers.length > 0) {
+      const bounds = new window.google.maps.LatLngBounds();
+      markers.forEach((marker) => {
+        bounds.extend({ lat: marker.latitude, lng: marker.longitude });
+      });
+      map.fitBounds(bounds);
+    }
+  }, [map, markers]);
+
+  const handleMarkerClick = (marker) => {
+    setSelectedMarker(marker);
+    if (map) {
+      map.panTo({ lat: marker.latitude, lng: marker.longitude });
+    }
   };
 
-  const CenterControl = (controlDiv, map, bounds) => {
-    const controlUI = document.createElement("div");
-    controlUI.style.backgroundColor = "#fff";
-    controlUI.style.border = "2px solid #fff";
-    controlUI.style.borderRadius = "3px";
-    controlUI.style.boxShadow = "0 2px 6px rgba(0,0,0,.3)";
-    controlUI.style.cursor = "pointer";
-    controlUI.style.marginTop = "10px";
-    controlUI.style.marginRight = "10px";
-    controlUI.style.textAlign = "center";
-    controlUI.title = "Click to recenter the map";
-    controlDiv.appendChild(controlUI);
+  const handleMapLoad = (mapInstance) => {
+    setMap(mapInstance);
+  };
 
-    const controlIcon = document.createElement("div");
-    controlIcon.style.backgroundImage =
-      "url('https://maps.gstatic.com/tactile/mylocation/mylocation-sprite-1x.png')";
-    controlIcon.style.backgroundSize = "160px 16px";
-    controlIcon.style.backgroundPosition = "0 0";
-    controlIcon.style.width = "16px";
-    controlIcon.style.height = "16px";
-    controlIcon.style.margin = "10px";
-    controlUI.appendChild(controlIcon);
-
-    controlUI.addEventListener("click", () => {
+  const handleCenterControlClick = () => {
+    if (map) {
+      const bounds = new window.google.maps.LatLngBounds();
+      markers.forEach((marker) => {
+        bounds.extend({ lat: marker.latitude, lng: marker.longitude });
+      });
       map.fitBounds(bounds);
-    });
+      setSelectedMarker(null); // Close all opened info windows
+    }
   };
 
   return (
     <div className="container mt-5 text-center">
-      <div
-        id="map"
-        ref={mapRef}
-        style={{ height: "80vh", width: "100%" }}
-      ></div>
+      <LoadScript googleMapsApiKey={apiKey}>
+        <GoogleMap
+          mapContainerClassName="map-container"
+          zoom={10}
+          center={mapCenter}
+          onLoad={handleMapLoad}
+        >
+          {markers.map((marker) => (
+            <Marker
+              key={marker.corridaNumber}
+              position={{ lat: marker.latitude, lng: marker.longitude }}
+              onClick={() => handleMarkerClick(marker)}
+              title={`${marker.driverName} - ${marker.corridaNumber}`}
+            />
+          ))}
+
+          {selectedMarker && (
+            <InfoWindow
+              position={{
+                lat: selectedMarker.latitude,
+                lng: selectedMarker.longitude,
+              }}
+              onCloseClick={() => setSelectedMarker(null)}
+            >
+              <div>
+                <h5>Driver: {selectedMarker.driverName}</h5>
+                <p>Corrida: {selectedMarker.corridaNumber}</p>
+                <p>
+                  Última localização:{" "}
+                  {new Date(selectedMarker.timestamp + "Z").toLocaleString(
+                    "pt-BR",
+                    {
+                      timeZone: "America/Sao_Paulo",
+                    },
+                  )}
+                </p>
+              </div>
+            </InfoWindow>
+          )}
+
+          <div
+            className="center-control"
+            title="Click to recenter the map"
+            onClick={handleCenterControlClick}
+          >
+            <div className="center-control-icon"></div>
+          </div>
+        </GoogleMap>
+      </LoadScript>
     </div>
   );
 };

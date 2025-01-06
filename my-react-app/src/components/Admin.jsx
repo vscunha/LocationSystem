@@ -1,5 +1,6 @@
 // src/components/Admin.jsx
 import React, { useEffect, useState } from "react";
+import "./Admin.scss"; // Import the SASS file
 
 const Admin = () => {
   const [users, setUsers] = useState([]);
@@ -29,7 +30,7 @@ const Admin = () => {
 
   const handleDelete = async (email) => {
     const token = localStorage.getItem("token");
-    if (window.confirm(`Are you sure you want to delete user ${email}?`)) {
+    if (window.confirm(`Tem certeza que deseja excluir o usuário ${email}?`)) {
       await fetch("/api/admin/deleteUser", {
         method: "POST",
         headers: {

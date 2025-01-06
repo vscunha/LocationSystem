@@ -3,18 +3,18 @@ import React from "react";
 
 const Confirm = () => (
   <div className="container text-center mt-5">
-    <h2>Your email has been confirmed!</h2>
+    <h2>Seu email foi confirmado!</h2>
     <p>
-      However, your account access is pending. Please contact the administrator
-      to enable your account.
+      No entanto, o acesso à sua conta está pendente. Por favor, entre em
+      contato com o administrador para ativar sua conta.
     </p>
     <img
-      src="https://via.placeholder.com/300x200?text=Contact+Administrator"
-      alt="Contact Administrator"
+      src="https://via.placeholder.com/300x200?text=Contatar+Administrador"
+      alt="Contatar Administrador"
     />
     <div className="mt-3">
       <a href="/login" className="btn btn-primary">
-        Login Page
+        Página de Login
       </a>
     </div>
   </div>

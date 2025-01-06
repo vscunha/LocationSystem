@@ -22,7 +22,7 @@ repos:
         entry: npx prettier --write
         language: node
         pass_filenames: true
-        files: \.(js|jsx|css|html)$
+        files: \.(js|jsx|css|html|scss|sass|less)$
         stages: [pre-commit]
 
       # 3) StyleLint (optional: add CSS-in-JS support)

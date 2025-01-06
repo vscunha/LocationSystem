@@ -43,7 +43,7 @@ const Register = () => {
     <div className="container">
       <div className="row justify-content-center mt-5">
         <div className="col-md-6">
-          <h3>Register</h3>
+          <h3>Registrar</h3>
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label htmlFor="registerEmail" className="form-label">
@@ -58,7 +58,7 @@ const Register = () => {
             </div>
             <div className="mb-3">
               <label htmlFor="registerPassword" className="form-label">
-                Password
+                Senha
               </label>
               <input
                 type="password"
@@ -68,7 +68,7 @@ const Register = () => {
               />
             </div>
             <button type="submit" className="btn btn-primary">
-              Register
+              Registrar
             </button>
           </form>
           {message && (

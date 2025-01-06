@@ -1,6 +1,7 @@
 // src/components/Index.jsx
 import React, { useEffect, useState } from "react";
 import * as bootstrap from "bootstrap";
+import "./Index.scss"; // Import the SASS file
 
 const serverUrl = "/api/location"; // URL configurable
 
@@ -270,16 +271,7 @@ const Index = () => {
 
   return (
     <div className="main-content container">
-      <header
-        className="banner"
-        style={{
-          background: `url('/images/banner.png')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          height: "200px",
-        }}
-      />
-
+      <header className="banner" />
       {/* Modal */}
       <div
         className="modal fade"
