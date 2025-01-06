@@ -27,23 +27,23 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/access-pending" element={<AccessPending />} />
         <Route path="/confirm" element={<Confirm />} />
-        <Route 
-          path="/map" 
+        <Route
+          path="/map"
           element={
             <ProtectedRoute>
               <Map />
             </ProtectedRoute>
-          } 
+          }
         />
         <Route path="/register" element={<Register />} />
         <Route path="/after-register" element={<AfterRegister />} />
-        <Route 
-          path="/admin" 
+        <Route
+          path="/admin"
           element={
             <ProtectedRoute requiredRole="admin">
               <Admin />
             </ProtectedRoute>
-          } 
+          }
         />
       </Routes>
     </Router>
