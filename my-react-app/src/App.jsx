@@ -10,6 +10,7 @@ import AfterRegister from "./components/AfterRegister";
 import Register from "./components/Register";
 import Index from "./components/Index";
 import Admin from "./components/Admin";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   const handleLogout = () => {
@@ -26,10 +27,24 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/access-pending" element={<AccessPending />} />
         <Route path="/confirm" element={<Confirm />} />
-        <Route path="/map" element={<Map />} />
+        <Route 
+          path="/map" 
+          element={
+            <ProtectedRoute>
+              <Map />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/register" element={<Register />} />
         <Route path="/after-register" element={<AfterRegister />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <Admin />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );
