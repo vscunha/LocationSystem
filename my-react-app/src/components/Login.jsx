@@ -47,7 +47,7 @@ const Login = () => {
             </div>
             <div className="mb-3">
               <label htmlFor="loginPassword" className="form-label">
-                Password
+                Senha
               </label>
               <input
                 type="password"
@@ -60,7 +60,7 @@ const Login = () => {
               Login
             </button>
             <a href="/register" className="btn btn-link">
-              Register
+              Registrar
             </a>
           </form>
           {message && <div className="mt-3 text-danger">{message}</div>}

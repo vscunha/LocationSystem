@@ -1,29 +1,41 @@
 repos:
-  # We define a "local" repo of hooks (i.e. commands we want to run).
   - repo: local
     hooks:
-      # 1) ESLint
+      # 1) ESLint with React configuration
       - id: eslint
         name: ESLint
         entry: npx eslint
-        language: system
+        language: node
         pass_filenames: true
-        files: \.(js|jsx)$            # Only run on JS files
-        stages: [commit]
+        files: \.(js|jsx)$
+        stages: [pre-commit]
+        additional_dependencies: [
+          'eslint',
+          'eslint-plugin-react',
+          'eslint-plugin-react-hooks',
+          'eslint-config-react-app'
+        ]
 
-      # 2) Prettier (format JS, CSS, HTML, etc.)
+      # 2) Prettier (already handles React)
       - id: prettier
         name: Prettier
         entry: npx prettier --write
-        language: system
+        language: node
         pass_filenames: true
         files: \.(js|jsx|css|html)$
-        stages: [commit]
+        stages: [pre-commit]
 
-      # You can add more hooks here (stylelint, cspell, etc.)
+      # 3) StyleLint (optional: add CSS-in-JS support)
       - id: stylelint
         name: Stylelint
         entry: npx stylelint --fix
-        language: system
+        language: node
         pass_filenames: true
-        files: \.css$
+        files: \.(css|scss|sass|less)$
+        stages: [pre-commit]
+        additional_dependencies: [
+          'stylelint',
+          'stylelint-config-standard',
+          'stylelint-config-prettier',
+          'stylelint-config-recommended'
+        ]

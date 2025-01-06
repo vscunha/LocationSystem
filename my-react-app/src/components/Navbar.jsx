@@ -35,7 +35,7 @@ const Navbar = ({ onLogout }) => {
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container-fluid">
         <a className="navbar-brand" href="/">
-          My Race
+          Portal de Corridas
         </a>
         <button
           className="navbar-toggler"
@@ -54,22 +54,22 @@ const Navbar = ({ onLogout }) => {
             </li>
             <li className="nav-item">
               <a className="nav-link" id="registerLink" href="/register">
-                Register
+                Registrar
               </a>
             </li>
             <li className="nav-item d-none" id="mapTab">
               <a className="nav-link" href="/map">
-                Map
+                Mapa
               </a>
             </li>
             <li className="nav-item d-none" id="adminTab">
               <a className="nav-link" href="/admin">
-                User Control
+                Controle de Acesso
               </a>
             </li>
             <li className="nav-item d-none" id="logoutLink">
               <a className="nav-link" href="#" onClick={onLogout}>
-                Logout
+                Sair
               </a>
             </li>
           </ul>

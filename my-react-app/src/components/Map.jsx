@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 
 const Map = () => {
   const mapRef = useRef(null);
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
     if (!window.google) {
@@ -27,7 +28,7 @@ const Map = () => {
 
       const script = document.createElement("script");
       script.id = "google-maps-script";
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyAuaCwbztg77qEGzqHFq2JZbh9Ngcf8uC0`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
       script.async = true;
       script.defer = true;
 
@@ -67,6 +68,15 @@ const Map = () => {
       .then((response) => response.json())
       .then((data) => {
         data.forEach((location) => {
+          if (
+            !location.driverName ||
+            !location.corridaNumber ||
+            location.driverName === "Unknown Driver" ||
+            location.corridaNumber === "N/A"
+          ) {
+            return;
+          }
+
           const position = { lat: location.latitude, lng: location.longitude };
 
           const marker = new google.maps.Marker({
@@ -80,15 +90,20 @@ const Map = () => {
           const infoWindow = new google.maps.InfoWindow({
             content: `
               <div>
-                <h5>Driver: ${location.driverName}</h5>
-                <p>Corrida: ${location.corridaNumber}</p>
-                <p>Timestamp: ${location.timestamp}</p>
+              <h5>Driver: ${location.driverName}</h5>
+              <p>Corrida: ${location.corridaNumber}</p>
+              <p>Última localização: ${new Date(location.timestamp + "Z").toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</p>
               </div>
             `,
           });
 
           marker.addListener("click", () => {
+            // Close any previously opened InfoWindow
+            if (window.currentInfoWindow) {
+              window.currentInfoWindow.close();
+            }
             infoWindow.open(map, marker);
+            window.currentInfoWindow = infoWindow;
           });
         });
 
@@ -127,7 +142,6 @@ const Map = () => {
 
   return (
     <div className="container mt-5 text-center">
-      <h1>Map Page</h1>
       <div
         id="map"
         ref={mapRef}

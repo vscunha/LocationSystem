@@ -8,6 +8,18 @@ const Index = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
   let watchId = null;
+  const setCookie = (name, value, days = 7) => {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+  };
+
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2)
+      return decodeURIComponent(parts.pop().split(";").shift());
+    return null;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -164,7 +176,11 @@ const Index = () => {
         fetch("/api/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(subscription),
+          body: JSON.stringify({
+            subscription,
+            corridaNumber: localStorage.getItem("corridaNumber") || "N/A",
+            driverName: localStorage.getItem("driverName") || "Unknown Driver",
+          }),
         });
       })
       .catch((error) => console.error("Push subscription failed:", error));
@@ -201,8 +217,12 @@ const Index = () => {
 
   const startGeolocation = () => {
     handleInstallClick();
-    const driverName = localStorage.getItem("driverName") || "Unknown Driver";
-    const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
+    const driverName = document.getElementById("driverName").value;
+    const corridaNumber = document.getElementById("corridaNumber").innerText;
+
+    // Save to cookies
+    setCookie("driverName", driverName);
+    setCookie("corridaNumber", corridaNumber);
 
     if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
@@ -214,8 +234,8 @@ const Index = () => {
             body: JSON.stringify({
               latitude,
               longitude,
-              driverName,
-              corridaNumber,
+              driverName: getCookie("driverName") || "Unknown Driver",
+              corridaNumber: getCookie("corridaNumber") || "N/A",
             }),
           });
         },
@@ -232,18 +252,14 @@ const Index = () => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       navigator.geolocation.getCurrentPosition((position) => {
-        const driverName =
-          localStorage.getItem("driverName") || "Unknown Driver";
-        const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
-
         fetch(serverUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
-            driverName,
-            corridaNumber,
+            driverName: getCookie("driverName") || "Unknown Driver",
+            corridaNumber: getCookie("corridaNumber") || "N/A",
           }),
         });
       });
@@ -254,15 +270,15 @@ const Index = () => {
 
   return (
     <div className="main-content container">
-      <header className="banner">
-        <h1>Welcome to the Race Portal</h1>
-      </header>
-      <h2>Main Page</h2>
-      <p>
-        This is the main page content. If you load this page with a
-        <code>?corrida=NUMBER</code> parameter in the URL, a modal will
-        automatically pop up showing the corrida number and driver name fields.
-      </p>
+      <header
+        className="banner"
+        style={{
+          background: `url('/images/banner.png')`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          height: "200px",
+        }}
+      />
 
       {/* Modal */}
       <div
@@ -276,7 +292,7 @@ const Index = () => {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title" id="corridaModalLabel">
-                Corrida Details
+                Detalhes da Corrida
               </h5>
               <button
                 type="button"
@@ -287,12 +303,12 @@ const Index = () => {
             </div>
             <div className="modal-body">
               <p>
-                <strong>Corrida Number:</strong>
+                <strong>Número da Corrida: </strong>
                 <span id="corridaNumber"></span>
               </p>
               <div className="mb-3">
                 <label htmlFor="driverName" className="form-label">
-                  Driver Name
+                  <strong>Nome do Motorista</strong>
                 </label>
                 <input type="text" className="form-control" id="driverName" />
               </div>
@@ -304,7 +320,7 @@ const Index = () => {
                 onClick={startGeolocation}
                 data-bs-dismiss="modal"
               >
-                Start Ride
+                Iniciar Corrida
               </button>
             </div>
           </div>

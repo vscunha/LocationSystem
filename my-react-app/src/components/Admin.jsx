@@ -45,30 +45,30 @@ const Admin = () => {
 
   return (
     <div className="container mt-5">
-      <h2>User Control Panel</h2>
+      <h2>Controle de Acesso</h2>
       <table className="table table-bordered">
         <thead>
           <tr>
             <th>Email</th>
-            <th>Confirmed</th>
-            <th>Enabled</th>
-            <th>Role</th>
-            <th>Actions</th>
+            <th>Confirmado</th>
+            <th>Ativo</th>
+            <th>Acesso</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {users.map((user) => (
             <tr key={user.email}>
               <td>{user.email}</td>
-              <td>{user.confirmed ? "Yes" : "No"}</td>
-              <td>{user.enabled ? "Yes" : "No"}</td>
+              <td>{user.confirmed ? "Sim" : "Não"}</td>
+              <td>{user.enabled ? "Sim" : "Não"}</td>
               <td>{user.role}</td>
               <td>
                 <button
                   className="btn btn-danger"
                   onClick={() => handleDelete(user.email)}
                 >
-                  Delete
+                  Deletar
                 </button>
               </td>
             </tr>

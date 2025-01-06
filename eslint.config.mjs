@@ -1,40 +1,56 @@
-// eslint.config.js
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
-  // 1) Global ignores (e.g. node_modules)
+  // 1) Global ignores
   {
-    ignores: [
-      '**/node_modules/**',
-    ],
+    ignores: ['**/node_modules/**']
   },
 
-  // 2) CLIENT-APP CONFIG (ES Modules + Browser)
+  // 2) CLIENT-APP CONFIG (React + ES Modules + Browser)
   {
-    // Merge ESLint recommended + Prettier overrides
     ...js.configs.recommended,
-    ...prettier, // ensures ESLint doesn't conflict with Prettier
-
-    files: ['client-app/**/*.js'],
+    ...prettier,
+    
+    files: ['client-app/**/*.{js,jsx}'],
+    
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+    },
 
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'module', // ESM
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
       globals: {
         window: 'readonly',
         document: 'readonly',
         console: 'readonly',
-        // other browser globals if needed
       },
     },
-    rules: {
-      // Your custom rules or overrides for client code
-      // For example: 'semi': ['error', 'always']
+
+    settings: {
+      react: {
+        version: 'detect'
+      }
     },
+
+    rules: {
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn'
+    }
   },
 
-  // 3) SERVER-APP CONFIG (CommonJS + Node)
+  // 3) SERVER-APP CONFIG (unchanged)
   {
     ...js.configs.recommended,
     ...prettier,
@@ -43,17 +59,13 @@ export default [
 
     languageOptions: {
       ecmaVersion: 'latest',
-      sourceType: 'commonjs', // CommonJS
+      sourceType: 'commonjs',
       globals: {
         require: 'readonly',
         module: 'readonly',
         process: 'readonly',
         __dirname: 'readonly',
-        // other Node globals if needed
       },
     },
-    rules: {
-      // Your custom rules or overrides for server code
-    },
-  },
+  }
 ];
