@@ -109,7 +109,7 @@ const Map = () => {
               onCloseClick={() => setSelectedMarker(null)}
             >
               <div>
-                <h5>Driver: {selectedMarker.driverName}</h5>
+                <h5>Motorista: {selectedMarker.driverName}</h5>
                 <p>Corrida: {selectedMarker.corridaNumber}</p>
                 <p>
                   Última localização:{" "}
