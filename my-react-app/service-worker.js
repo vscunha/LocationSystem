@@ -57,6 +57,7 @@ function fetchAndSendLocation(driverName = null, corridaNumber = null) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        const preciseLocation = false;
         const driverName =
           localStorage.getItem("driverName") || "Unknown Driver";
         const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
@@ -68,6 +69,7 @@ function fetchAndSendLocation(driverName = null, corridaNumber = null) {
             longitude,
             driverName,
             corridaNumber,
+            preciseLocation,
           }),
         });
       },
@@ -84,6 +86,7 @@ self.addEventListener("message", (event) => {
   if (event.data.type === "LOCATION_RESPONSE") {
     const { latitude, longitude, driverName, corridaNumber } =
       event.data.payload;
+    const preciseLocation = true;
     console.log(
       "Received location from client:",
       latitude,
@@ -96,7 +99,13 @@ self.addEventListener("message", (event) => {
     fetch("https://locationsystemtest.zapto.org/api/location", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ latitude, longitude, driverName, corridaNumber }),
+      body: JSON.stringify({
+        latitude,
+        longitude,
+        driverName,
+        corridaNumber,
+        preciseLocation,
+      }),
     });
   }
 });
@@ -126,13 +135,21 @@ async function sendLocation(driverName, corridaNumber) {
 
     const { latitude, longitude } = locationData;
 
+    const preciseLocation = false;
+
     // Send location to server[]
     await fetch("/api/location", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ latitude, longitude, driverName, corridaNumber }),
+      body: JSON.stringify({
+        latitude,
+        longitude,
+        driverName,
+        corridaNumber,
+        preciseLocation,
+      }),
     });
 
     console.log("Location data sent:", {

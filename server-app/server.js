@@ -29,6 +29,7 @@ db.run(
     longitude REAL NOT NULL,
     driverName TEXT,
     corridaNumber TEXT,
+    preciseLocation BOOLEAN,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
   (err) => {
@@ -58,7 +59,8 @@ db.run(
 
 // POST endpoint to receive location data
 app.post("/location", (req, res) => {
-  const { latitude, longitude, driverName, corridaNumber } = req.body;
+  const { latitude, longitude, driverName, corridaNumber, preciseLocation } =
+    req.body;
 
   // Validate latitude/longitude
   if (typeof latitude !== "number" || typeof longitude !== "number") {
@@ -70,8 +72,8 @@ app.post("/location", (req, res) => {
 
   // Prepare SQL statement with extra columns for driverName and corrida
   const stmt = db.prepare(`
-    INSERT INTO locations (latitude, longitude, driverName, corridaNumber)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO locations (latitude, longitude, driverName, corridaNumber, preciseLocation)
+    VALUES (?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -79,6 +81,7 @@ app.post("/location", (req, res) => {
     longitude,
     driverName || null,
     corridaNumber || null,
+    preciseLocation || null,
     function (err) {
       if (err) {
         console.error("Error inserting data:", err.message);
@@ -88,7 +91,8 @@ app.post("/location", (req, res) => {
           `Location data saved with ID: ${this.lastID}, 
          driverName: ${driverName}, 
          corridaNumber: ${corridaNumber}, 
-         timestamp: ${new Date().toLocaleString()}`,
+         timestamp: ${new Date().toLocaleString()},
+         preciseLocation: ${preciseLocation}`,
         );
         return res
           .status(200)
@@ -164,7 +168,7 @@ app.get("/location", (req, res) => {
 // POST endpoint to retrieve the most recent location for each unique driverName
 app.post("/recent-locations", (req, res) => {
   const query = `
-    SELECT driverName, latitude, longitude, corridaNumber, MAX(timestamp) as timestamp
+    SELECT driverName, latitude, longitude, corridaNumber, preciseLocation, MAX(timestamp) as timestamp
     FROM locations
     GROUP BY driverName
   `;

@@ -9,6 +9,7 @@ const Index = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
   let watchId = null;
+
   const setCookie = (name, value, days = 7) => {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
@@ -174,13 +175,15 @@ const Index = () => {
       })
       .then((subscription) => {
         console.log("Push subscription:", subscription);
+        const corridaNumber = getCookie("corridaNumber") || "N/A";
+        const driverName = getCookie("driverName") || "Unknown Driver";
         fetch("/api/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             subscription,
-            corridaNumber: localStorage.getItem("corridaNumber") || "N/A",
-            driverName: localStorage.getItem("driverName") || "Unknown Driver",
+            corridaNumber: corridaNumber,
+            driverName: driverName,
           }),
         });
       })
@@ -216,6 +219,20 @@ const Index = () => {
     });
   };
 
+  const fetchLocationData = (latitude, longitude) => {
+    fetch(serverUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        latitude,
+        longitude,
+        driverName: getCookie("driverName") || "Unknown Driver",
+        corridaNumber: getCookie("corridaNumber") || "N/A",
+        preciseLocation: true,
+      }),
+    });
+  };
+
   const startGeolocation = () => {
     handleInstallClick();
     const driverName = document.getElementById("driverName").value;
@@ -229,16 +246,7 @@ const Index = () => {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          fetch(serverUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              latitude,
-              longitude,
-              driverName: getCookie("driverName") || "Unknown Driver",
-              corridaNumber: getCookie("corridaNumber") || "N/A",
-            }),
-          });
+          fetchLocationData(latitude, longitude);
         },
         (error) => {
           console.error("Error obtaining location:", error);
@@ -251,20 +259,18 @@ const Index = () => {
   };
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      navigator.geolocation.getCurrentPosition((position) => {
-        fetch(serverUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            driverName: getCookie("driverName") || "Unknown Driver",
-            corridaNumber: getCookie("corridaNumber") || "N/A",
-          }),
-        });
-      });
-    }, 300000); // 5 minutes
+    const fetchLocation = async () => {
+      const position = await getCurrentPosition();
+      fetchLocationData(position.coords.latitude, position.coords.longitude);
+    };
+    //const printpos = (position) => {
+    //  console.log(position.coords.latitude, position.coords.longitude);
+    //}
+    //navigator.geolocation.getCurrentPosition(printpos);
+    //startGeolocation();
+    fetchLocation();
+
+    const intervalId = setInterval(() => fetchLocation(), 300000); // 5 minutes
 
     return () => clearInterval(intervalId);
   }, []);
