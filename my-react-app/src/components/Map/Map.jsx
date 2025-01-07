@@ -126,13 +126,7 @@ const Map = () => {
                 key={marker.corridaNumber}
                 center={{ lat: marker.latitude, lng: marker.longitude }}
                 radius={10000}
-                options={{
-                  strokeColor: circleStyles.default.strokeColor,
-                  strokeOpacity: circleStyles.default.strokeOpacity,
-                  strokeWeight: circleStyles.default.strokeWeight,
-                  fillColor: circleStyles.default.fillColor,
-                  fillOpacity: circleStyles.default.fillOpacity,
-                }}
+                options={circleStyles.default}
                 onClick={() => handleMarkerClick(marker)}
               />
             ),

@@ -11,7 +11,7 @@ export const circleStyles = {
 
 export const markerIconStyles = {
   default: {
-    path: window.google?.maps?.SymbolPath?.CIRCLE,
+    path: 0, // Circle
     fillColor: "#4dabf7",
     fillOpacity: 1,
     strokeWeight: 1,
