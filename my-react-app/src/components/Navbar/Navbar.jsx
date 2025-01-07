@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import "./Navbar.scss";
 
 const Navbar = ({ onLogout }) => {
   useEffect(() => {
@@ -10,6 +11,8 @@ const Navbar = ({ onLogout }) => {
     const logoutLink = document.getElementById("logoutLink");
     const mapTab = document.getElementById("mapTab");
     const adminTab = document.getElementById("adminTab");
+    const ridesTab = document.getElementById("ridesTab");
+    const rideGeneratorTab = document.getElementById("rideGeneratorTab");
 
     if (token && role) {
       // Logged-in state
@@ -17,6 +20,8 @@ const Navbar = ({ onLogout }) => {
       registerLink?.classList.add("d-none");
       logoutLink?.classList.remove("d-none");
       mapTab?.classList.remove("d-none");
+      ridesTab?.classList.remove("d-none");
+      rideGeneratorTab?.classList.remove("d-none");
 
       if (role === "admin") {
         adminTab?.classList.remove("d-none");
@@ -28,6 +33,8 @@ const Navbar = ({ onLogout }) => {
       logoutLink?.classList.add("d-none");
       mapTab?.classList.add("d-none");
       adminTab?.classList.add("d-none");
+      ridesTab?.classList.add("d-none");
+      rideGeneratorTab?.classList.add("d-none");
     }
   }, []);
 
@@ -60,6 +67,11 @@ const Navbar = ({ onLogout }) => {
             <li className="nav-item d-none" id="mapTab">
               <a className="nav-link" href="/map">
                 Mapa
+              </a>
+            </li>
+            <li className="nav-item d-none" id="ridesTab">
+              <a className="nav-link" href="/rides">
+                Lista de Viagens
               </a>
             </li>
             <li className="nav-item d-none" id="adminTab">

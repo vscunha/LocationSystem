@@ -47,35 +47,37 @@ const Admin = () => {
   return (
     <div className="container mt-5">
       <h2>Controle de Acesso</h2>
-      <table className="table table-bordered">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Confirmado</th>
-            <th>Ativo</th>
-            <th>Acesso</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.email}>
-              <td>{user.email}</td>
-              <td>{user.confirmed ? "Sim" : "Não"}</td>
-              <td>{user.enabled ? "Sim" : "Não"}</td>
-              <td>{user.role}</td>
-              <td>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleDelete(user.email)}
-                >
-                  Deletar
-                </button>
-              </td>
+      <div className="table-responsive">
+        <table className="table table-bordered">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Confirmado</th>
+              <th>Ativo</th>
+              <th>Acesso</th>
+              <th>Ações</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.email}>
+                <td>{user.email}</td>
+                <td>{user.confirmed ? "Sim" : "Não"}</td>
+                <td>{user.enabled ? "Sim" : "Não"}</td>
+                <td>{user.role}</td>
+                <td>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => handleDelete(user.email)}
+                  >
+                    Deletar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

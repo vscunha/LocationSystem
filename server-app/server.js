@@ -57,6 +57,24 @@ db.run(
   },
 );
 
+// Create table for rides
+db.run(
+  `CREATE TABLE IF NOT EXISTS rides (
+    hash TEXT PRIMARY KEY,
+    departureLocation TEXT NOT NULL,
+    finalLocation TEXT NOT NULL,
+    driverName TEXT NOT NULL,
+    rideId TEXT NOT NULL,
+    status TEXT DEFAULT 'Waiting',
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`,
+  (err) => {
+    if (err) {
+      console.error("Error creating rides table:", err.message);
+    }
+  },
+);
+
 // POST endpoint to receive location data
 app.post("/location", (req, res) => {
   const { latitude, longitude, driverName, corridaNumber, preciseLocation } =
@@ -183,6 +201,100 @@ app.post("/recent-locations", (req, res) => {
       return res.status(200).json(rows);
     }
   });
+});
+
+// POST endpoint to generate ride hash
+app.post("/rides/generate", (req, res) => {
+  console.log("Received ride data:", req.body);
+  const { departureLocation, finalLocation, driverName, rideId } = req.body;
+
+  if (!departureLocation || !finalLocation || !driverName || !rideId) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  // Generate hash using timestamp and ride details
+  const timestamp = Date.now();
+  const hash = require("crypto")
+    .createHash("md5")
+    .update(`${timestamp}-${rideId}-${driverName}`)
+    .digest("hex");
+
+  const stmt = db.prepare(`
+    INSERT INTO rides (hash, departureLocation, finalLocation, driverName, rideId)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  stmt.run(
+    hash,
+    departureLocation,
+    finalLocation,
+    driverName,
+    rideId,
+    function (err) {
+      if (err) {
+        console.error("Error inserting ride:", err.message);
+        return res.status(500).json({ error: "Failed to save ride data." });
+      }
+      return res.status(200).json({ hash });
+    },
+  );
+
+  stmt.finalize();
+});
+
+// GET endpoint to retrieve ride information
+app.get("/ride/:hash", (req, res) => {
+  const { hash } = req.params;
+
+  db.get("SELECT * FROM rides WHERE hash = ?", [hash], (err, row) => {
+    if (err) {
+      console.error("Error retrieving ride:", err.message);
+      return res.status(500).json({ error: "Database error." });
+    }
+    if (!row) {
+      return res.status(404).json({ error: "Ride not found." });
+    }
+    return res.status(200).json(row);
+  });
+});
+
+app.get("/rides/all-rides", (req, res) => {
+  try {
+    db.all("SELECT * FROM rides ORDER BY timestamp DESC", [], (err, rows) => {
+      if (err) {
+        console.error("Error fetching rides:", err);
+        return res.status(500).json({ error: "Database error." });
+      }
+      return res.status(200).json(rows);
+    });
+  } catch (error) {
+    console.error("Error fetching rides:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Add new endpoint to update ride status
+app.post("/ride/status", (req, res) => {
+  const { hash, status } = req.body;
+
+  if (!hash || !status) {
+    return res.status(400).json({ error: "Hash and status are required." });
+  }
+
+  db.run(
+    "UPDATE rides SET status = ? WHERE hash = ?",
+    [status, hash],
+    function (err) {
+      if (err) {
+        console.error("Error updating ride status:", err.message);
+        return res.status(500).json({ error: "Failed to update ride status." });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Ride not found." });
+      }
+      return res.status(200).json({ message: "Status updated successfully." });
+    },
+  );
 });
 
 // Start the server

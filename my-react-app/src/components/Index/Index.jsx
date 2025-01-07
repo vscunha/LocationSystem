@@ -26,8 +26,6 @@ const Index = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    const urlParams = new URLSearchParams(window.location.search);
-    const corridaParam = urlParams.get("corrida");
 
     if (token && role) {
       document.getElementById("loginLink").classList.add("d-none");
@@ -39,45 +37,6 @@ const Index = () => {
         document.getElementById("adminTab").classList.remove("d-none");
       }
     }
-
-    let modalInstance = null;
-
-    if (corridaParam) {
-      const corridaNumberElement = document.getElementById("corridaNumber");
-      const driverNameElement = document.getElementById("driverName");
-      const modalElement = document.getElementById("corridaModal");
-
-      if (corridaNumberElement) {
-        corridaNumberElement.innerText = corridaParam;
-      }
-
-      if (driverNameElement) {
-        driverNameElement.value = ""; // Clear driver name input
-      }
-
-      modalInstance = new bootstrap.Modal(modalElement);
-
-      // Show the modal
-      modalInstance.show();
-
-      // Add event listener to ensure cleanup of backdrop
-      modalElement.addEventListener("hidden.bs.modal", () => {
-        const backdrop = document.querySelector(".modal-backdrop");
-        if (backdrop) {
-          backdrop.remove(); // Remove the backdrop manually
-        }
-      });
-    }
-
-    return () => {
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-      const backdrop = document.querySelector(".modal-backdrop");
-      if (backdrop) {
-        backdrop.remove(); // Ensure the backdrop is removed during cleanup
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -278,52 +237,6 @@ const Index = () => {
   return (
     <div className="main-content container">
       <header className="banner" />
-      {/* Modal */}
-      <div
-        className="modal fade"
-        id="corridaModal"
-        tabIndex="-1"
-        aria-labelledby="corridaModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id="corridaModalLabel">
-                Detalhes da Corrida
-              </h5>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div className="modal-body">
-              <p>
-                <strong>Número da Corrida: </strong>
-                <span id="corridaNumber"></span>
-              </p>
-              <div className="mb-3">
-                <label htmlFor="driverName" className="form-label">
-                  <strong>Nome do Motorista</strong>
-                </label>
-                <input type="text" className="form-control" id="driverName" />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={startGeolocation}
-                data-bs-dismiss="modal"
-              >
-                Iniciar Corrida
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
