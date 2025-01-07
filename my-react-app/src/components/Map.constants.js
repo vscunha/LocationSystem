@@ -8,3 +8,14 @@ export const circleStyles = {
     fillOpacity: 0.35,
   },
 };
+
+export const markerIconStyles = {
+  default: {
+    path: window.google?.maps?.SymbolPath?.CIRCLE,
+    fillColor: "#4dabf7",
+    fillOpacity: 1,
+    strokeWeight: 1,
+    strokeColor: "#4dabf7",
+    scale: 8,
+  },
+};

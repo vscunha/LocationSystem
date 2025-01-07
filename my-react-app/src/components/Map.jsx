@@ -9,7 +9,7 @@ import {
 } from "@react-google-maps/api";
 
 import "./Map.scss";
-import { circleStyles } from "./Map.constants.js";
+import { circleStyles, markerIconStyles } from "./Map.constants.js";
 
 const Map = () => {
   const [map, setMap] = useState(null);
@@ -20,15 +20,6 @@ const Map = () => {
     lng: -46.633308,
   });
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  const markerIcon = {
-    path: window.google?.maps?.SymbolPath?.CIRCLE,
-    fillColor: "#4dabf7",
-    fillOpacity: 1,
-    strokeWeight: 1,
-    strokeColor: "#4dabf7",
-    scale: 8,
-  };
 
   const calculateBoundsWithRadius = (locations) => {
     const bounds = new window.google.maps.LatLngBounds();
@@ -128,7 +119,7 @@ const Map = () => {
                 position={{ lat: marker.latitude, lng: marker.longitude }}
                 onClick={() => handleMarkerClick(marker)}
                 title={`${marker.driverName} - ${marker.corridaNumber}`}
-                icon={markerIcon}
+                icon={markerIconStyles.default}
               />
             ) : (
               <Circle
