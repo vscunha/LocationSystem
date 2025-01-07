@@ -18,6 +18,7 @@ import Admin from "./components/Admin/Admin";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import Ride from "./components/Ride/Ride";
 import RidesList from "./components/RidesList/RidesList";
+import LocationTracker from "./components/LocationTracker/LocationTracker";
 
 // Create a wrapper component to handle navbar visibility
 const AppContent = ({ handleLogout }) => {
@@ -26,6 +27,7 @@ const AppContent = ({ handleLogout }) => {
 
   return (
     <>
+      <LocationTracker />
       {!isRidePage && <Navbar onLogout={handleLogout} />}
       <Routes>
         <Route path="/" element={<Index />} />

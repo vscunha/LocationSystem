@@ -56,11 +56,18 @@ function fetchAndSendLocation(driverName = null, corridaNumber = null) {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2)
+            return decodeURIComponent(parts.pop().split(";").shift());
+          return null;
+        };
+
         const { latitude, longitude } = position.coords;
         const preciseLocation = false;
-        const driverName =
-          localStorage.getItem("driverName") || "Unknown Driver";
-        const corridaNumber = localStorage.getItem("corridaNumber") || "N/A";
+        const driverName = getCookie("driverName") || "Unknown Driver";
+        const corridaNumber = getCookie("corridaNumber") || "N/A";
         fetch("https://locationsystemtest.zapto.org/api/location", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

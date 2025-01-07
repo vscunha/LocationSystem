@@ -151,7 +151,7 @@
 
       &:focus {
         outline: none;
-        border-color: #007bff;
+        border-color: #00bf62;
         box-shadow: 0 0 0 2px rgb(0 123 255 / 25%);
       }
     }
@@ -181,11 +181,11 @@
       }
 
       &.btn-primary {
-        background: #007bff;
+        background: #00bf62;
         color: white;
 
         &:hover {
-          background: #0056b3;
+          background: #00a858;
         }
       }
     }

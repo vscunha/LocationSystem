@@ -131,7 +131,7 @@ let subscriptions = require("./subscriptions.json");
 // POST endpoint to store or update subscription by driverName + corridaNumber
 app.post("/subscribe", (req, res) => {
   // Expect body like: { driverName, corridaNumber, subscription: {...} }
-  const { driverName, corridaNumber, subscription } = req.body;
+  const { driverName, corridaNumber, driverPhone, subscription } = req.body;
 
   if (!driverName || !corridaNumber || !subscription) {
     return res
@@ -148,14 +148,20 @@ app.post("/subscribe", (req, res) => {
   if (existingIndex >= 0) {
     // REPLACE the old subscription with the new one
     subscriptions[existingIndex].subscription = subscription;
+    subscriptions[existingIndex].driverPhone = driverPhone;
     console.log(
-      `Updated subscription for driverName=${driverName}, corridaNumber=${corridaNumber}`,
+      `Updated subscription for driverName=${driverName}, corridaNumber=${corridaNumber}, driverPhone=${driverPhone}`,
     );
   } else {
     // Add a new subscription object
-    subscriptions.push({ driverName, corridaNumber, subscription });
+    subscriptions.push({
+      driverName,
+      corridaNumber,
+      driverPhone,
+      subscription,
+    });
     console.log(
-      `New subscription added: driverName=${driverName}, corridaNumber=${corridaNumber}`,
+      `New subscription added: driverName=${driverName}, corridaNumber=${corridaNumber}, driverPhone=${driverPhone}`,
     );
   }
 
