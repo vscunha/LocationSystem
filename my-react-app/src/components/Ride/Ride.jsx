@@ -38,6 +38,10 @@ const Ride = () => {
 
   // Register the service worker
   const registerServiceWorkers = () => {
+    // Update to use state values instead of DOM elements
+    setCookie("driverName", driverName);
+    setCookie("corridaNumber", rideData.rideId);
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/service-worker.js")
@@ -95,22 +99,23 @@ const Ride = () => {
     }
   };
 
-  const subscribeToPushNotifications = (registration) => {
+  const subscribeToPushNotifications = (
+    registration,
+    userVisibleOnly = false,
+  ) => {
     registration.pushManager
       .subscribe({
-        userVisibleOnly: false,
+        userVisibleOnly: userVisibleOnly,
         applicationServerKey: urlBase64ToUint8Array(
           "BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo",
         ),
       })
       .catch(() => {
-        // If false fails, try with true
-        return registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(
-            "BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo",
-          ),
-        });
+        if (!userVisibleOnly) {
+          subscribeToPushNotifications(registration, true);
+        }
+        console.error("User denied permission to send notifications.");
+        return;
       })
       .then((subscription) => {
         console.log("Push subscription:", subscription);
@@ -151,12 +156,6 @@ const Ride = () => {
   };
 
   const startGeolocation = () => {
-    registerServiceWorkers();
-
-    // Update to use state values instead of DOM elements
-    setCookie("driverName", driverName);
-    setCookie("corridaNumber", rideData.rideId);
-
     if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
@@ -231,6 +230,7 @@ const Ride = () => {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
         await updateRideStatus("Running");
+        registerServiceWorkers();
         setCompletionStatus("location_prompt");
         setLocationPromptShown(true);
 

@@ -325,6 +325,17 @@ webPush.setVapidDetails(
 function sendNotification(subscription, payload) {
   webPush.sendNotification(subscription, payload).catch((err) => {
     console.error("Error sending notification:", err);
+    if (err.statusCode === 410) {
+      // Gone - subscription is no longer valid
+      console.log("Subscription is no longer valid, removing...");
+      subscriptions = subscriptions.filter(
+        (s) => JSON.stringify(s.subscription) !== JSON.stringify(subscription),
+      );
+      fs.writeFileSync(
+        "subscriptions.json",
+        JSON.stringify(subscriptions, null, 2),
+      );
+    }
   });
 }
 
