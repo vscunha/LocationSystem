@@ -11,9 +11,12 @@ const Ride = () => {
   const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
-  const [completionStatus, setCompletionStatus] = useState(null); // Add this line
+  const [completionStatus, setCompletionStatus] = useState(null);
   const [driverName, setDriverName] = useState("");
   const [driverPhone, setDriverPhone] = useState("");
+  const [permissionError, setPermissionError] = useState(null);
+  const [locationPromptShown, setLocationPromptShown] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(true);
   let watchId = null;
 
   const setCookie = (name, value, days = 7) => {
@@ -30,27 +33,7 @@ const Ride = () => {
   };
 
   useEffect(() => {
-    // Listen for the beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e); // Save the event for later
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    // Check if PWA is already installed
-    window.addEventListener("appinstalled", () => {
-      console.log("PWA installed!");
-      setIsPwaInstalled(true);
-    });
-
-    // Cleanup listeners
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt,
-      );
-    };
+    checkLocationPermission();
   }, []);
 
   // Register the service worker
@@ -115,10 +98,19 @@ const Ride = () => {
   const subscribeToPushNotifications = (registration) => {
     registration.pushManager
       .subscribe({
-        userVisibleOnly: true,
+        userVisibleOnly: false,
         applicationServerKey: urlBase64ToUint8Array(
           "BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo",
         ),
+      })
+      .catch(() => {
+        // If false fails, try with true
+        return registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(
+            "BBxYaFUxGyX1LJWoek5zZZwS04IfX3U1wHclg51a5K8ss51Zpi0ib2KP7wfTiAs6CAfPx2CvRPOokMpGxiS0bCo",
+          ),
+        });
       })
       .then((subscription) => {
         console.log("Push subscription:", subscription);
@@ -181,6 +173,20 @@ const Ride = () => {
     }
   };
 
+  const requestGeolocationPermission = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          // Permission granted
+          startGeolocation();
+        },
+        (error) => {
+          console.error("Geolocation permission denied:", error);
+        },
+      );
+    }
+  };
+
   useEffect(() => {
     const fetchRideData = async () => {
       try {
@@ -219,14 +225,38 @@ const Ride = () => {
   };
 
   const startRide = async () => {
-    await updateRideStatus("Running");
-    startGeolocation();
     setCompletionStatus("confirming");
 
-    // Wait 10 seconds before showing success screen
-    setTimeout(() => {
-      setCompletionStatus("started");
-    }, 10000);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === "granted") {
+        await updateRideStatus("Running");
+        setCompletionStatus("location_prompt");
+        setLocationPromptShown(true);
+
+        const locationPermission = await navigator.permissions.query({
+          name: "geolocation",
+        });
+        if (locationPermission.state === "granted") {
+          startGeolocation();
+        } else if (locationPermission.state === "prompt") {
+          requestGeolocationPermission();
+        }
+
+        setTimeout(() => {
+          setCompletionStatus("started");
+        }, 10000);
+      } else {
+        setPermissionError(
+          "Notificações não autorizadas. Por favor, permita as notificações para continuar.",
+        );
+        setCompletionStatus(null);
+      }
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      setPermissionError("Erro ao solicitar permissão de notificação.");
+      setCompletionStatus(null);
+    }
   };
 
   const finishRide = async () => {
@@ -243,6 +273,13 @@ const Ride = () => {
 
   const getStatusInPortuguese = (status) => {
     return statusMapping[status] || status;
+  };
+
+  const checkLocationPermission = async () => {
+    const locationPermission = await navigator.permissions.query({
+      name: "geolocation",
+    });
+    setShowLocationPrompt(locationPermission.state !== "granted");
   };
 
   if (loading) return <div>Loading...</div>;
@@ -269,10 +306,39 @@ const Ride = () => {
       <div className="ride-container">
         <header className="banner" />
         <div className="ride-info confirmation-screen">
+          <h2>Permissão Necessária</h2>
+          <p>
+            Para prosseguir, precisamos da sua permissão para enviar
+            notificações.
+          </p>
+          <p>
+            Por favor, aceite a solicitação de permissão que aparecerá em
+            seguida.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (completionStatus === "location_prompt") {
+    return (
+      <div className="ride-container">
+        <header className="banner" />
+        <div className="ride-info confirmation-screen">
+          {showLocationPrompt && (
+            <>
+              <h2>Localização (Opcional)</h2>
+              <p>
+                Para melhor experiência, recomendamos permitir o acesso à
+                localização.
+              </p>
+              <p>Isso nos ajuda a validar o início da sua viagem.</p>
+            </>
+          )}
+          <p>Aguarde enquanto processamos...</p>
           <div className="loading-spinner">
             <i className="fas fa-circle-notch fa-spin"></i>
           </div>
-          <p>Confirmando Corrida</p>
         </div>
       </div>
     );
@@ -316,6 +382,12 @@ const Ride = () => {
     <div className="ride-container">
       <header className="banner-small" />
       <h2>Confirmação de Corrida</h2>
+      {permissionError && (
+        <div className="error-alert">
+          <i className="fas fa-exclamation-triangle"></i>
+          {permissionError}
+        </div>
+      )}
       <div className="ride-info">
         {rideData.status === "Waiting" ? (
           <>

@@ -68,7 +68,7 @@ function fetchAndSendLocation(driverName = null, corridaNumber = null) {
         const preciseLocation = false;
         const driverName = getCookie("driverName") || "Unknown Driver";
         const corridaNumber = getCookie("corridaNumber") || "N/A";
-        fetch("https://locationsystemtest.zapto.org/api/location", {
+        fetch("/api/location", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -103,7 +103,7 @@ self.addEventListener("message", (event) => {
     );
 
     // Perform background tasks with the location
-    fetch("https://locationsystemtest.zapto.org/api/location", {
+    fetch("/api/location", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

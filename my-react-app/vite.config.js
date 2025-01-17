@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     hmr: {
-      host: "locationsystemtest.zapto.org",
+      host: "vrbseguro.online",
       protocol: "wss", // Use WebSocket Secure since you're using HTTPS
     },
     host: true, // Allow access from external networks
