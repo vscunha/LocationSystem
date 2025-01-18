@@ -65,6 +65,8 @@ db.run(
     finalLocation TEXT NOT NULL,
     driverName TEXT NOT NULL,
     rideId TEXT NOT NULL,
+    phone TEXT,
+    plate TEXT,
     status TEXT DEFAULT 'Waiting',
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
@@ -128,41 +130,33 @@ if (!fs.existsSync("subscriptions.json")) {
 // Load subscriptions from file
 let subscriptions = require("./subscriptions.json");
 
-// POST endpoint to store or update subscription by driverName + corridaNumber
+// POST endpoint to store or update subscription by corridaNumber
 app.post("/subscribe", (req, res) => {
-  // Expect body like: { driverName, corridaNumber, subscription: {...} }
-  const { driverName, corridaNumber, driverPhone, subscription } = req.body;
+  // Expect body like: { corridaNumber, subscription: {...} }
+  const { corridaNumber, subscription } = req.body;
 
-  if (!driverName || !corridaNumber || !subscription) {
+  if (!corridaNumber || !subscription) {
     return res
       .status(400)
-      .json({ error: "Missing driverName, corridaNumber, or subscription." });
+      .json({ error: "Missing corridaNumber or subscription." });
   }
 
-  // Find existing subscription with matching driverName + corridaNumber
+  // Find existing subscription with matching corridaNumber
   const existingIndex = subscriptions.findIndex(
-    (sub) =>
-      sub.driverName === driverName && sub.corridaNumber === corridaNumber,
+    (sub) => sub.corridaNumber === corridaNumber,
   );
 
   if (existingIndex >= 0) {
     // REPLACE the old subscription with the new one
     subscriptions[existingIndex].subscription = subscription;
-    subscriptions[existingIndex].driverPhone = driverPhone;
-    console.log(
-      `Updated subscription for driverName=${driverName}, corridaNumber=${corridaNumber}, driverPhone=${driverPhone}`,
-    );
+    console.log(`Updated subscription for orridaNumber=${corridaNumber}`);
   } else {
     // Add a new subscription object
     subscriptions.push({
-      driverName,
       corridaNumber,
-      driverPhone,
       subscription,
     });
-    console.log(
-      `New subscription added: driverName=${driverName}, corridaNumber=${corridaNumber}, driverPhone=${driverPhone}`,
-    );
+    console.log(`New subscription added: corridaNumber=${corridaNumber}`);
   }
 
   // Save updated subscriptions to file
@@ -194,7 +188,7 @@ app.post("/recent-locations", (req, res) => {
   const query = `
     SELECT driverName, latitude, longitude, corridaNumber, preciseLocation, MAX(timestamp) as timestamp
     FROM locations
-    GROUP BY driverName
+    GROUP BY corridaNumber
   `;
 
   db.all(query, [], (err, rows) => {
@@ -212,13 +206,13 @@ app.post("/recent-locations", (req, res) => {
 // POST endpoint to generate ride hash
 app.post("/rides/generate", (req, res) => {
   console.log("Received ride data:", req.body);
-  const { departureLocation, finalLocation, driverName, rideId } = req.body;
+  const { departureLocation, finalLocation, driverName, rideId, phone, plate } =
+    req.body;
 
   if (!departureLocation || !finalLocation || !driverName || !rideId) {
-    return res.status(400).json({ error: "All fields are required." });
+    return res.status(400).json({ error: "Required fields are missing." });
   }
 
-  // Generate hash using timestamp and ride details
   const timestamp = Date.now();
   const hash = require("crypto")
     .createHash("md5")
@@ -226,8 +220,8 @@ app.post("/rides/generate", (req, res) => {
     .digest("hex");
 
   const stmt = db.prepare(`
-    INSERT INTO rides (hash, departureLocation, finalLocation, driverName, rideId)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO rides (hash, departureLocation, finalLocation, driverName, rideId, phone, plate)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -236,6 +230,8 @@ app.post("/rides/generate", (req, res) => {
     finalLocation,
     driverName,
     rideId,
+    phone || null,
+    plate || null,
     function (err) {
       if (err) {
         console.error("Error inserting ride:", err.message);
@@ -303,6 +299,36 @@ app.post("/ride/status", (req, res) => {
   );
 });
 
+// GET endpoint to retrieve ride information by corridaNumber
+app.get("/rides/:corridaNumber", (req, res) => {
+  const { corridaNumber } = req.params;
+
+  db.get(
+    "SELECT * FROM rides WHERE rideId = ?",
+    [corridaNumber],
+    (err, row) => {
+      if (err) {
+        console.error("Error retrieving ride:", err.message);
+        return res.status(500).json({ error: "Database error." });
+      }
+      if (!row) {
+        return res.status(404).json({ error: "Ride not found." });
+      }
+
+      // Transform the data to match the expected format
+      const rideData = {
+        corridaNumber: row.rideId,
+        status: row.status,
+        origin: row.departureLocation,
+        destination: row.finalLocation,
+        driverName: row.driverName,
+      };
+
+      return res.status(200).json(rideData);
+    },
+  );
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
@@ -348,16 +374,48 @@ function sendRandomNotification() {
   // Reload subscriptions each time to pick up changes
   subscriptions = JSON.parse(fs.readFileSync("subscriptions.json", "utf8"));
 
+  // Process each subscription asynchronously
   subscriptions.forEach((sub) => {
-    // Build payload with driverName/corridaNumber
-    const payload = JSON.stringify({
-      title: "Corrida Notification",
-      body: "",
-      driverName: sub.driverName,
-      corridaNumber: sub.corridaNumber,
-      silent: true,
-    });
-    sendNotification(sub.subscription, payload);
+    // Check if ride exists and is running
+    db.get(
+      "SELECT status FROM rides WHERE rideId = ?",
+      [sub.corridaNumber],
+      (err, row) => {
+        if (err) {
+          console.error("Error checking ride status:", err);
+          return;
+        }
+
+        if (!row || row.status !== "Running") {
+          // Remove subscription if ride doesn't exist or isn't running
+          console.log(
+            `Removing subscription for ride ${sub.corridaNumber} - not running or doesn't exist`,
+          );
+          subscriptions = subscriptions.filter(
+            (s) =>
+              !(
+                s.driverName === sub.driverName &&
+                s.corridaNumber === sub.corridaNumber
+              ),
+          );
+          fs.writeFileSync(
+            "subscriptions.json",
+            JSON.stringify(subscriptions, null, 2),
+          );
+          return;
+        }
+
+        // Build payload with driverName/corridaNumber
+        const payload = JSON.stringify({
+          title: "Corrida Notification",
+          body: "",
+          driverName: sub.driverName,
+          corridaNumber: sub.corridaNumber,
+          silent: true,
+        });
+        sendNotification(sub.subscription, payload);
+      },
+    );
   });
 
   setTimeout(sendRandomNotification, randomInterval(300000, 600000)); // 5-10 min

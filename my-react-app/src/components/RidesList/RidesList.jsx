@@ -6,14 +6,22 @@ const RidesList = () => {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showCancelled, setShowCancelled] = useState(false);
+  const [showRunning, setShowRunning] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newRide, setNewRide] = useState({
     departureLocation: "",
     finalLocation: "",
     driverName: "",
     rideId: "",
+    phone: "",
+    plate: "",
   });
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
+  const [copiedHash, setCopiedHash] = useState(null);
 
   useEffect(() => {
     const fetchRides = async () => {
@@ -34,24 +42,33 @@ const RidesList = () => {
     fetchRides();
   }, []);
 
-  const cancelRide = async (hash) => {
-    try {
-      const response = await fetch("/api/ride/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hash, status: "Cancelled" }),
-      });
+  const changeRideStatus = async (hash, newStatus) => {
+    const action = newStatus === "Cancelled" ? "cancelar" : "finalizar";
+    setConfirmDialog({
+      isOpen: true,
+      message: `Tem certeza que deseja ${action} esta viagem?`,
+      onConfirm: async () => {
+        try {
+          const response = await fetch("/api/ride/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ hash, status: newStatus }),
+          });
 
-      if (!response.ok) throw new Error("Failed to cancel ride");
+          if (!response.ok) throw new Error(`Failed to ${action} ride`);
 
-      setRides((prevRides) =>
-        prevRides.map((ride) =>
-          ride.hash === hash ? { ...ride, status: "Cancelled" } : ride,
-        ),
-      );
-    } catch (err) {
-      setError(err.message);
-    }
+          setRides((prevRides) =>
+            prevRides.map((ride) =>
+              ride.hash === hash ? { ...ride, status: newStatus } : ride,
+            ),
+          );
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setConfirmDialog({ isOpen: false, message: "", onConfirm: null });
+        }
+      },
+    });
   };
 
   const getStatusBadge = (status) => {
@@ -120,6 +137,8 @@ const RidesList = () => {
         finalLocation: "",
         driverName: "",
         rideId: "",
+        phone: "",
+        plate: "",
       });
       setShowModal(false);
     } catch (err) {
@@ -150,9 +169,19 @@ const RidesList = () => {
     });
   };
 
-  const filteredRides = showCancelled
-    ? rides
-    : rides.filter((ride) => ride.status !== "Cancelled");
+  const copyToClipboard = (ride) => {
+    const text = `${window.location.origin}/ride/${ride.hash}`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedHash(ride.hash);
+      setTimeout(() => setCopiedHash(null), 2000); // Reset after 2 seconds
+    });
+  };
+
+  const filteredRides = showRunning
+    ? rides.filter(
+        (ride) => ride.status === "Waiting" || ride.status === "Running",
+      )
+    : rides;
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -170,11 +199,13 @@ const RidesList = () => {
       <div className="show-cancelled">
         <input
           type="checkbox"
-          id="show-cancelled"
-          checked={showCancelled}
-          onChange={(e) => setShowCancelled(e.target.checked)}
+          id="show-running"
+          checked={showRunning}
+          onChange={(e) => setShowRunning(e.target.checked)}
         />
-        <label htmlFor="show-cancelled">Mostrar viagens canceladas</label>
+        <label htmlFor="show-running">
+          Mostrar apenas viagens em andamento
+        </label>
       </div>
 
       {/* Modal */}
@@ -214,7 +245,27 @@ const RidesList = () => {
                 />
               </div>
               <div className="form-group">
-                <label>ID da Viagem</label>
+                <label>Telefone</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={newRide.phone}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Placa</label>
+                <input
+                  type="text"
+                  name="plate"
+                  value={newRide.plate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>CTE</label>
                 <input
                   type="text"
                   name="rideId"
@@ -244,10 +295,12 @@ const RidesList = () => {
         <table className="rides-table">
           <thead>
             <tr>
-              <th>ID da Viagem</th>
+              <th>CTE</th>
               <th>Motorista</th>
               <th>Partida</th>
               <th>Destino</th>
+              <th>Telefone</th>
+              <th>Placa</th>
               <th>Status</th>
               <th>Link</th>
               <th>Ações</th>
@@ -263,18 +316,40 @@ const RidesList = () => {
                 <td>{ride.driverName}</td>
                 <td>{ride.departureLocation}</td>
                 <td>{ride.finalLocation}</td>
+                <td>{ride.phone}</td>
+                <td>{ride.plate}</td>
                 <td>{getStatusBadge(ride.status)}</td>
-                <td>
-                  <Link to={`/ride/${ride.hash}`}>link</Link>
+                <td className="action-buttons">
+                  <Link
+                    to={`/ride/${ride.hash}`}
+                    className="btn btn-sm btn-primary"
+                  >
+                    Link
+                  </Link>
+                  <button
+                    onClick={() => copyToClipboard(ride)}
+                    className={`btn btn-sm ${copiedHash === ride.hash ? "btn-success" : "btn-primary"}`}
+                  >
+                    {copiedHash === ride.hash ? "Copiado!" : "Copiar Link"}
+                  </button>
                 </td>
                 <td>
-                  {ride.status === "Waiting" && (
+                  {ride.status === "Waiting" ? (
                     <button
-                      onClick={() => cancelRide(ride.hash)}
+                      onClick={() => changeRideStatus(ride.hash, "Cancelled")}
                       className="btn btn-sm btn-secondary"
                     >
                       Cancelar
                     </button>
+                  ) : (
+                    ride.status === "Running" && (
+                      <button
+                        onClick={() => changeRideStatus(ride.hash, "Finished")}
+                        className="btn btn-sm btn-secondary"
+                      >
+                        Finalizar
+                      </button>
+                    )
                   )}
                 </td>
               </tr>
@@ -282,6 +357,36 @@ const RidesList = () => {
           </tbody>
         </table>
       </div>
+
+      {confirmDialog.isOpen && (
+        <div className="confirm-dialog-overlay">
+          <div className="confirm-dialog">
+            <p>{confirmDialog.message}</p>
+            <div className="confirm-dialog-actions">
+              <button
+                className="btn btn-secondary"
+                onClick={() =>
+                  setConfirmDialog({
+                    isOpen: false,
+                    message: "",
+                    onConfirm: null,
+                  })
+                }
+              >
+                Não
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  confirmDialog.onConfirm();
+                }}
+              >
+                Sim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

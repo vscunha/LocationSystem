@@ -87,6 +87,18 @@
       color: #999;
     }
   }
+
+  input[placeholder="Placa do Veículo"] {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+
+    &::placeholder {
+      text-transform: none;
+      letter-spacing: normal;
+      font-weight: normal;
+    }
+  }
 }
 
 .loading-spinner {
@@ -185,4 +197,54 @@
   background-color: #414141 !important;
   color: #fff;
   height: auto;
+}
+
+.confirmation-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+
+  h3 {
+    color: #414141;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+  }
+
+  .confirmation-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+
+    button {
+      min-width: 100px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 1rem;
+
+      &.btn-secondary {
+        background-color: #6c757d;
+        color: #fff;
+        border: none;
+
+        &:hover {
+          background-color: #5a6268;
+        }
+      }
+    }
+  }
 }

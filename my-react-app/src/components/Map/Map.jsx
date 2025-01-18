@@ -15,6 +15,7 @@ const Map = () => {
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [selectedMarker, setSelectedMarker] = useState(null);
+  const [selectedRide, setSelectedRide] = useState(null);
   const [mapCenter, setMapCenter] = useState({
     lat: -23.55052,
     lng: -46.633308,
@@ -47,24 +48,50 @@ const Map = () => {
 
   useEffect(() => {
     if (map) {
+      // First fetch locations
       fetch("/api/recent-locations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       })
         .then((response) => response.json())
-        .then((data) => {
+        .then(async (data) => {
+          // Filter valid corridaNumbers first
           const validLocations = data.filter(
             (location) =>
-              location.driverName &&
-              location.corridaNumber &&
-              location.driverName !== "Unknown Driver" &&
-              location.corridaNumber !== "N/A",
+              location.corridaNumber && location.corridaNumber !== "N/A",
           );
 
-          setMarkers(validLocations);
+          // Fetch ride status for each location
+          const locationsWithStatus = await Promise.all(
+            validLocations.map(async (location) => {
+              try {
+                const rideResponse = await fetch(
+                  `/api/rides/${location.corridaNumber}`,
+                );
+                const rideData = await rideResponse.json();
+                return {
+                  ...location,
+                  status: rideData.status,
+                };
+              } catch (error) {
+                console.error(
+                  `Error fetching ride ${location.corridaNumber}:`,
+                  error,
+                );
+                return null;
+              }
+            }),
+          );
 
-          if (validLocations.length > 0) {
-            const bounds = calculateBoundsWithRadius(validLocations);
+          // Filter only running rides and remove null entries
+          const runningLocations = locationsWithStatus.filter(
+            (location) => location && location.status === "Running",
+          );
+
+          setMarkers(runningLocations);
+
+          if (runningLocations.length > 0) {
+            const bounds = calculateBoundsWithRadius(runningLocations);
             if (map) {
               map.fitBounds(bounds);
             } else {
@@ -84,10 +111,20 @@ const Map = () => {
     }
   }, [map, markers]);
 
-  const handleMarkerClick = (marker) => {
-    setSelectedMarker(marker);
-    if (map) {
-      map.panTo({ lat: marker.latitude, lng: marker.longitude });
+  const handleMarkerClick = async (marker) => {
+    try {
+      const response = await fetch(`/api/rides/${marker.corridaNumber}`);
+      const rideData = await response.json();
+
+      if (rideData) {
+        setSelectedMarker(marker);
+        setSelectedRide(rideData);
+        if (map) {
+          map.panTo({ lat: marker.latitude, lng: marker.longitude });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching ride data:", error);
     }
   };
 
@@ -97,8 +134,14 @@ const Map = () => {
 
   const handleCenterControlClick = () => {
     if (map) {
-      const bounds = calculateBoundsWithRadius(markers);
-      map.fitBounds(bounds);
+      if (markers.length > 0) {
+        const bounds = calculateBoundsWithRadius(markers);
+        map.fitBounds(bounds);
+      } else {
+        // Default to São Paulo coordinates
+        map.setCenter({ lat: -23.55052, lng: -46.633308 });
+        map.setZoom(10);
+      }
       setSelectedMarker(null); // Close all opened info windows
     }
   };
@@ -118,7 +161,7 @@ const Map = () => {
                 key={marker.corridaNumber}
                 position={{ lat: marker.latitude, lng: marker.longitude }}
                 onClick={() => handleMarkerClick(marker)}
-                title={`${marker.driverName} - ${marker.corridaNumber}`}
+                title={marker.corridaNumber}
                 icon={markerIconStyles.default}
               />
             ) : (
@@ -132,17 +175,23 @@ const Map = () => {
             ),
           )}
 
-          {selectedMarker && (
+          {selectedMarker && selectedRide && (
             <InfoWindow
               position={{
                 lat: selectedMarker.latitude,
                 lng: selectedMarker.longitude,
               }}
-              onCloseClick={() => setSelectedMarker(null)}
+              onCloseClick={() => {
+                setSelectedMarker(null);
+                setSelectedRide(null);
+              }}
             >
               <div>
-                <h5>Motorista: {selectedMarker.driverName}</h5>
-                <p>Corrida: {selectedMarker.corridaNumber}</p>
+                <h5>CTE: {selectedRide.corridaNumber}</h5>
+                <p>Status: {selectedRide.status}</p>
+                <p>Origem: {selectedRide.origin}</p>
+                <p>Destino: {selectedRide.destination}</p>
+                <p>Motorista: {selectedRide.driverName}</p>
                 <p>
                   Última localização:{" "}
                   {new Date(selectedMarker.timestamp + "Z").toLocaleString(

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import LocationTracker from "../LocationTracker/LocationTracker";
+import { confirm } from "react-confirm-box";
 import "./Ride.scss";
 
 const Ride = () => {
@@ -223,6 +224,24 @@ const Ride = () => {
     }
   };
 
+  const allowLocation = async () => {
+    const locationPermission = await navigator.permissions.query({
+      name: "geolocation",
+    });
+
+    if (locationPermission.state === "granted") {
+      startGeolocation();
+      setCompletionStatus(null);
+    } else {
+      setShowLocationPrompt(false);
+      requestGeolocationPermission();
+    }
+
+    setTimeout(() => {
+      allowLocation();
+    }, 5000);
+  };
+
   const startRide = async () => {
     setCompletionStatus("confirming");
 
@@ -239,13 +258,8 @@ const Ride = () => {
         });
         if (locationPermission.state === "granted") {
           startGeolocation();
-        } else if (locationPermission.state === "prompt") {
-          requestGeolocationPermission();
+          setCompletionStatus(null);
         }
-
-        setTimeout(() => {
-          setCompletionStatus("started");
-        }, 10000);
       } else {
         setPermissionError(
           "Notificações não autorizadas. Por favor, permita as notificações para continuar.",
@@ -260,8 +274,38 @@ const Ride = () => {
   };
 
   const finishRide = async () => {
-    await updateRideStatus("Finished");
-    setCompletionStatus("finished");
+    const options = {
+      labels: {
+        confirmable: "Sim",
+        cancellable: "Não",
+      },
+      render: (message, onConfirm, onCancel) => {
+        return (
+          <div className="confirmation-dialog">
+            <h3>Confirmar Finalização</h3>
+            <p>
+              Tem certeza que deseja finalizar esta viagem agora? Você já chegou
+              no destino final ?
+            </p>
+            <div className="confirmation-buttons">
+              <button onClick={onCancel} className="btn btn-secondary">
+                Não
+              </button>
+              <button onClick={onConfirm} className="btn btn-primary">
+                Sim
+              </button>
+            </div>
+          </div>
+        );
+      },
+    };
+
+    const result = await confirm("", options);
+
+    if (result) {
+      await updateRideStatus("Finished");
+      setCompletionStatus("finished");
+    }
   };
 
   const statusMapping = {
@@ -325,20 +369,26 @@ const Ride = () => {
       <div className="ride-container">
         <header className="banner" />
         <div className="ride-info confirmation-screen">
-          {showLocationPrompt && (
+          <h2>Confirmar localização de partida</h2>
+          <p>É necessário validar o ponto de partida da corrida.</p>
+          <p>
+            Para isso basta clicar em permitir sua localização atual e a corrida
+            será autorizada pelo sistema.
+          </p>
+          {showLocationPrompt ? (
             <>
-              <h2>Localização (Opcional)</h2>
-              <p>
-                Para melhor experiência, recomendamos permitir o acesso à
-                localização.
-              </p>
-              <p>Isso nos ajuda a validar o início da sua viagem.</p>
+              <button className="btn btn-primary" onClick={allowLocation}>
+                Permitir Localização
+              </button>
+            </>
+          ) : (
+            <>
+              <p>Aguarde enquanto processamos...</p>
+              <div className="loading-spinner">
+                <i className="fas fa-circle-notch fa-spin"></i>
+              </div>
             </>
           )}
-          <p>Aguarde enquanto processamos...</p>
-          <div className="loading-spinner">
-            <i className="fas fa-circle-notch fa-spin"></i>
-          </div>
         </div>
       </div>
     );
@@ -381,7 +431,11 @@ const Ride = () => {
   return (
     <div className="ride-container">
       <header className="banner-small" />
-      <h2>Confirmação de Corrida</h2>
+      {rideData.status === "Waiting" ? (
+        <h2>Confirmação de Corrida</h2>
+      ) : (
+        <h2>Comprovante de corrida</h2>
+      )}
       {permissionError && (
         <div className="error-alert">
           <i className="fas fa-exclamation-triangle"></i>
@@ -389,34 +443,14 @@ const Ride = () => {
         </div>
       )}
       <div className="ride-info">
-        {rideData.status === "Waiting" ? (
-          <>
-            <div className="input-group">
-              <input
-                type="text"
-                value={driverName}
-                onChange={(e) => setDriverName(e.target.value)}
-                placeholder="Nome"
-                className="form-control"
-              />
-            </div>
-            <div className="input-group">
-              <input
-                type="tel"
-                value={driverPhone}
-                onChange={(e) => setDriverPhone(e.target.value)}
-                placeholder="Telefone"
-                className="form-control"
-              />
-            </div>
-          </>
-        ) : (
-          <p>
-            <strong>Motorista:</strong> {driverName || rideData.driverName}
-          </p>
-        )}
         <p>
-          <strong>Partida:</strong> {rideData.departureLocation}
+          <strong>Motorista:</strong> {rideData.driverName}
+        </p>
+        <p>
+          <strong>Placa:</strong> {rideData.plate}
+        </p>
+        <p>
+          <strong>Origem:</strong> {rideData.departureLocation}
         </p>
         <p>
           <strong>Destino:</strong> {rideData.finalLocation}
@@ -424,13 +458,18 @@ const Ride = () => {
         <p>
           <strong>Status:</strong> {getStatusInPortuguese(rideData.status)}
         </p>
+        {rideData.status !== "Waiting" && (
+          <p>
+            <strong>Pagamento:</strong> Em processamento
+          </p>
+        )}
       </div>
       {rideData.status !== "Cancelled" && (
         <>
           {rideData.status === "Waiting" && (
             <>
               <button className="btn btn-primary" onClick={startRide}>
-                INICIAR VIAGEM
+                CONFIRMAR CORRIDA
               </button>
               <div>
                 <br />
@@ -454,7 +493,7 @@ const Ride = () => {
           )}
           {rideData.status === "Running" && (
             <button className="btn btn-danger" onClick={finishRide}>
-              Finalizar Viagem
+              FINALIZAR VIAGEM AGORA
             </button>
           )}
         </>
