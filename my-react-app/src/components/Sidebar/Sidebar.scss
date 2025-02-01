@@ -1,0 +1,36 @@
+.sidebar {
+  width: 300px;
+  height: 80vh;
+  background-color: #fff;
+  box-shadow: 2px 0 5px rgb(0 0 0 / 10%);
+  padding: 20px;
+  overflow-y: auto;
+
+  .search-box {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .drivers-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    .driver-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #f5f5f5;
+      }
+
+      &.selected {
+        background-color: #e3f2fd;
+      }
+    }
+  }
+}
