@@ -2,16 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- link rel="image" sizes="192x192" href="/images/icon-192.png" />
-    <link rel="image" sizes="512x512" href="/images/icon-512.png" />
-    <link rel="image" href="/images/banner.png" />
-    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" /> -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VRB - Portal de Corridas</title>
+    <!-- Remove the previous Chrome suggestion meta tag -->
+    <!-- Add Android and iOS Chrome intent -->
+    <meta name="google" content="notranslate" />
+    <meta name="theme-color" content="#000000" />
+    <script>
+      // Try to open in Chrome
+      function openInChrome() {
+        // Get current URL
+        const currentUrl = window.location.href;
+
+        // Check if running on mobile
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          // Try Chrome on Android
+          if (/Android/i.test(navigator.userAgent)) {
+            window.location.href = `intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;end`;
+          }
+          // Try Chrome on iOS
+          else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            window.location.href = `googlechrome://${window.location.host}${window.location.pathname}${window.location.search}`;
+            // Fallback after timeout
+            setTimeout(() => {
+              window.location.href =
+                "https://apps.apple.com/app/google-chrome/id535886823";
+            }, 2000);
+          }
+        }
+      }
+
+      // Check if not already in Chrome
+      if (
+        !/Chrome/.test(navigator.userAgent) ||
+        !/Google Inc/.test(navigator.vendor)
+      ) {
+        openInChrome();
+      }
+    </script>
+    <!-- ... rest of your head content ... -->
   </head>
   <body>
     <div id="root"></div>

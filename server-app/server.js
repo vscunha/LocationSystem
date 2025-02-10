@@ -329,6 +329,25 @@ app.get("/rides/:corridaNumber", (req, res) => {
   );
 });
 
+// Add this endpoint before app.listen()
+app.get("/location/check/:corridaNumber", (req, res) => {
+  const { corridaNumber } = req.params;
+
+  db.get(
+    `SELECT COUNT(*) as count 
+     FROM locations 
+     WHERE corridaNumber = ?`,
+    [corridaNumber],
+    (err, row) => {
+      if (err) {
+        console.error("Error checking location:", err.message);
+        return res.status(500).json({ error: "Database error" });
+      }
+      return res.json({ hasRecentLocation: row.count > 0 });
+    },
+  );
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

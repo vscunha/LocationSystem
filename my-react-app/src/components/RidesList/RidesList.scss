@@ -238,3 +238,28 @@ body.modal-open {
     white-space: nowrap;
   }
 }
+
+.location-led {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+
+  &.active {
+    background-color: #2ecc71;
+    box-shadow: 0 0 8px #2ecc71;
+  }
+
+  &.inactive {
+    background-color: #e74c3c;
+    box-shadow: 0 0 8px #e74c3c;
+  }
+}
+
+.ride-id-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -1,3 +1,9 @@
+$mobile-breakpoint: 768px;
+
+:root {
+  --mobile-breakpoint: #{$mobile-breakpoint};
+}
+
 .sidebar {
   width: 300px;
   height: 80vh;
@@ -20,9 +26,31 @@
     margin: 0;
 
     .driver-item {
-      padding: 10px;
+      padding: 12px;
       border-bottom: 1px solid #eee;
       cursor: pointer;
+
+      .driver-name {
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      .driver-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        color: #666;
+        font-size: 0.85em;
+      }
+
+      .driver-cte {
+        // remove the existing color and font-size as they're now in driver-info
+      }
+
+      .driver-location-time {
+        color: #888;
+        text-align: right;
+      }
 
       &:hover {
         background-color: #f5f5f5;
@@ -32,5 +60,34 @@
         background-color: #e3f2fd;
       }
     }
+  }
+
+  .close-button {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+
+    &:hover {
+      color: #333;
+    }
+  }
+}
+
+@media (width <= 768px) {
+  .sidebar {
+    height: 100vh;
+    margin: 0;
+    padding: 50px 20px 20px;
+  }
+
+  .close-button {
+    top: 15px;
+    right: 15px;
   }
 }

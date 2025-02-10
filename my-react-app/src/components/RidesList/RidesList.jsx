@@ -22,6 +22,7 @@ const RidesList = () => {
     onConfirm: null,
   });
   const [copiedHash, setCopiedHash] = useState(null);
+  const [locationStatus, setLocationStatus] = useState({});
 
   useEffect(() => {
     const fetchRides = async () => {
@@ -41,6 +42,32 @@ const RidesList = () => {
 
     fetchRides();
   }, []);
+
+  useEffect(() => {
+    const checkLocations = async () => {
+      const statuses = {};
+      for (const ride of rides) {
+        if (ride.status === "Running") {
+          try {
+            const response = await fetch(`/api/location/check/${ride.rideId}`);
+            const data = await response.json();
+            statuses[ride.rideId] = data.hasRecentLocation;
+          } catch (err) {
+            console.error("Error checking location for ride:", ride.rideId);
+          }
+        }
+      }
+      setLocationStatus(statuses);
+    };
+
+    // Initial check
+    checkLocations();
+
+    // Set up periodic checking every 30 seconds
+    const interval = setInterval(checkLocations, 30000);
+
+    return () => clearInterval(interval);
+  }, [rides]);
 
   const changeRideStatus = async (hash, newStatus) => {
     const action = newStatus === "Cancelled" ? "cancelar" : "finalizar";
@@ -312,7 +339,21 @@ const RidesList = () => {
                 key={ride.rideId}
                 className={ride.status === "Cancelled" ? "cancelled" : ""}
               >
-                <td>{ride.rideId}</td>
+                <td className="ride-id-cell">
+                  {ride.status === "Running" && (
+                    <span
+                      className={`location-led ${
+                        locationStatus[ride.rideId] ? "active" : "inactive"
+                      }`}
+                      title={
+                        locationStatus[ride.rideId]
+                          ? "Motorista enviando localização"
+                          : "Sem localização recente"
+                      }
+                    />
+                  )}
+                  {ride.rideId}
+                </td>
                 <td>{ride.driverName}</td>
                 <td>{ride.departureLocation}</td>
                 <td>{ride.finalLocation}</td>

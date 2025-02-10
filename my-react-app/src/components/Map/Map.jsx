@@ -8,12 +8,13 @@ const Map = () => {
   const mapContainerRef = useRef(null);
   const [map, setMap] = useState(null);
   const [markersData, setMarkersData] = useState([]); // Raw data from API
-  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [selectedDrivers, setSelectedDrivers] = useState([]); // Replace selectedDriver state
   const [filteredMarkersData, setFilteredMarkersData] = useState([]);
   const markersRef = useRef({}); // Will store google.maps.Marker objects keyed by corridaNumber
   const circlesRef = useRef({}); // For circles when location is not precise
   const infoWindowRef = useRef(null);
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const [isSidebarActive, setIsSidebarActive] = useState(false);
 
   // Utility: Dynamically load the Google Maps script
   const loadScript = (url) => {
@@ -71,6 +72,7 @@ const Map = () => {
         const googleMap = new window.google.maps.Map(mapContainerRef.current, {
           center: { lat: -23.55052, lng: -46.633308 },
           zoom: 10,
+          streetViewControl: false, // Disable Street View control
         });
         setMap(googleMap);
 
@@ -105,7 +107,7 @@ const Map = () => {
             (loc) => loc.corridaNumber && loc.corridaNumber !== "N/A",
           );
 
-          // For each valid location, fetch its ride status
+          // For each valid location, fetch its ride status and driver info
           const locationsWithStatus = await Promise.all(
             validLocations.map(async (loc) => {
               try {
@@ -113,7 +115,11 @@ const Map = () => {
                   `/api/rides/${loc.corridaNumber}`,
                 );
                 const rideData = await rideResponse.json();
-                return { ...loc, status: rideData.status };
+                return {
+                  ...loc,
+                  status: rideData.status,
+                  driverName: rideData.driverName, // Include driver name
+                };
               } catch (error) {
                 console.error(
                   `Error fetching ride ${loc.corridaNumber}:`,
@@ -152,19 +158,19 @@ const Map = () => {
         circle.setMap(null),
       );
 
-      // Clear the references
       markersRef.current = {};
       circlesRef.current = {};
 
-      // Create new markers/circles from the data
       markersData.forEach((data) => {
         if (data.preciseLocation) {
-          // Create a marker
           const marker = new window.google.maps.Marker({
             position: { lat: data.latitude, lng: data.longitude },
             map: map,
             title: data.corridaNumber,
-            icon: markerIconStyles.default,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              ...markerIconStyles.default,
+            },
           });
           marker.addListener("click", () => handleMarkerClick(data));
           markersRef.current[data.corridaNumber] = marker;
@@ -209,17 +215,19 @@ const Map = () => {
     }
   }, [filteredMarkersData, map]);
 
-  // Update filteredMarkersData when selectedDriver changes.
+  // Update filteredMarkersData when selectedDrivers changes.
   useEffect(() => {
-    if (selectedDriver) {
-      const filtered = markersData.filter(
-        (m) => m.corridaNumber === selectedDriver.corridaNumber,
+    if (selectedDrivers.length > 0) {
+      const filtered = markersData.filter((m) =>
+        selectedDrivers.some(
+          (driver) => driver.corridaNumber === m.corridaNumber,
+        ),
       );
       setFilteredMarkersData(filtered);
     } else {
       setFilteredMarkersData(markersData);
     }
-  }, [selectedDriver, markersData]);
+  }, [selectedDrivers, markersData]);
 
   // Called when a marker (or circle) is clicked.
   const handleMarkerClick = async (data) => {
@@ -235,11 +243,11 @@ const Map = () => {
       // Create a new InfoWindow.
       infoWindowRef.current = new window.google.maps.InfoWindow({
         content: `<div>
-                    <h5>CTE: ${rideData.corridaNumber}</h5>
-                    <p>Status: ${rideData.status}</p>
+                    <h5>${rideData.driverName}</h5>
+                    <p>CTE: ${rideData.corridaNumber}</p>
+                    <p>Status: Em Andamento</p>
                     <p>Origem: ${rideData.origin}</p>
                     <p>Destino: ${rideData.destination}</p>
-                    <p>Motorista: ${rideData.driverName}</p>
                     <p>Última localização: ${new Date(
                       data.timestamp + "Z",
                     ).toLocaleString("pt-BR", {
@@ -286,7 +294,20 @@ const Map = () => {
 
   // Called when a driver is selected from the Sidebar.
   const handleDriverSelect = (driver) => {
-    setSelectedDriver(driver);
+    if (driver === null) {
+      setSelectedDrivers([]);
+    } else {
+      setSelectedDrivers((prev) => {
+        const isSelected = prev.some(
+          (d) => d.corridaNumber === driver.corridaNumber,
+        );
+        if (isSelected) {
+          return prev.filter((d) => d.corridaNumber !== driver.corridaNumber);
+        } else {
+          return [...prev, driver];
+        }
+      });
+    }
     if (infoWindowRef.current) {
       infoWindowRef.current.close();
     }
@@ -295,10 +316,19 @@ const Map = () => {
   return (
     <div className="container mt-5">
       <div className="map-wrapper">
+        <button
+          className="sidebar-toggle"
+          onClick={() => setIsSidebarActive(!isSidebarActive)} // Changed to toggle
+        >
+          {isSidebarActive ? "×" : "☰"}{" "}
+          {/* Changed to show different icon based on state */}
+        </button>
         <Sidebar
           drivers={markersData}
           onDriverSelect={handleDriverSelect}
-          selectedDriver={selectedDriver}
+          selectedDrivers={selectedDrivers} // Updated prop name
+          isActive={isSidebarActive}
+          onClose={() => setIsSidebarActive(false)}
         />
         <div ref={mapContainerRef} className="map-container"></div>
       </div>
