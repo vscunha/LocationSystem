@@ -18,14 +18,22 @@
           if (/Android/i.test(navigator.userAgent)) {
             window.location.href = `intent://${window.location.host}${window.location.pathname}${window.location.search}#Intent;scheme=https;package=com.android.chrome;end`;
           }
-          // Try Chrome on iOS
+          // Updated iOS fallback branch
           else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            window.location.href = `googlechrome://${window.location.host}${window.location.pathname}${window.location.search}`;
-            // Fallback after timeout
-            setTimeout(() => {
+            // Create hidden iframe for Chrome
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.src = `googlechrome://${window.location.host}${window.location.pathname}${window.location.search}`;
+            document.body.appendChild(iframe);
+            // Set fallback timeout to App Store after 1500ms if Chrome doesn't open
+            const iosFallback = setTimeout(() => {
               window.location.href =
                 "https://apps.apple.com/app/google-chrome/id535886823";
-            }, 2000);
+            }, 1500);
+            // Cancel fallback if leaving the page
+            window.addEventListener("pagehide", () =>
+              clearTimeout(iosFallback),
+            );
           }
         }
       }

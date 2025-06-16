@@ -241,20 +241,19 @@ body.modal-open {
 
 .location-led {
   display: inline-block;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   margin-right: 8px;
-  vertical-align: middle;
 
   &.active {
     background-color: #2ecc71;
-    box-shadow: 0 0 8px #2ecc71;
+    box-shadow: 0 0 4px #2ecc71;
   }
 
   &.inactive {
     background-color: #e74c3c;
-    box-shadow: 0 0 8px #e74c3c;
+    box-shadow: 0 0 4px #e74c3c;
   }
 }
 

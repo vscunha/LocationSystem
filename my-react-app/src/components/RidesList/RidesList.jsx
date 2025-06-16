@@ -47,14 +47,13 @@ const RidesList = () => {
     const checkLocations = async () => {
       const statuses = {};
       for (const ride of rides) {
-        if (ride.status === "Running") {
-          try {
-            const response = await fetch(`/api/location/check/${ride.rideId}`);
-            const data = await response.json();
-            statuses[ride.rideId] = data.hasRecentLocation;
-          } catch (err) {
-            console.error("Error checking location for ride:", ride.rideId);
-          }
+        try {
+          const response = await fetch(`/api/location/check/${ride.rideId}`);
+          const data = await response.json();
+          statuses[ride.rideId] = data.hasRecentLocation;
+        } catch (err) {
+          console.error("Error checking location for ride:", ride.rideId);
+          statuses[ride.rideId] = false;
         }
       }
       setLocationStatus(statuses);
@@ -340,18 +339,16 @@ const RidesList = () => {
                 className={ride.status === "Cancelled" ? "cancelled" : ""}
               >
                 <td className="ride-id-cell">
-                  {ride.status === "Running" && (
-                    <span
-                      className={`location-led ${
-                        locationStatus[ride.rideId] ? "active" : "inactive"
-                      }`}
-                      title={
-                        locationStatus[ride.rideId]
-                          ? "Motorista enviando localização"
-                          : "Sem localização recente"
-                      }
-                    />
-                  )}
+                  <span
+                    className={`location-led ${
+                      locationStatus[ride.rideId] ? "active" : "inactive"
+                    }`}
+                    title={
+                      locationStatus[ride.rideId]
+                        ? "Motorista enviando localização"
+                        : "Sem localização recente"
+                    }
+                  />
                   {ride.rideId}
                 </td>
                 <td>{ride.driverName}</td>
